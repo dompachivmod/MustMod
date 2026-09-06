@@ -1,0 +1,7 @@
+`define GAMEMODE MustModLTS
+
+DefaultProperties
+{
+	IdleTimeLimit=9000.f 
+	RoundTime=9000
+}

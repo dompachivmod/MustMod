@@ -1,0 +1,29 @@
+[ChatMessages]
+Welcome=Welcome to Xang Mod!
+
+[MustModWeapon_Warbow]
+WeaponName=Warbow
+
+[MustModWeapon_Longbow]
+WeaponName=Longbow
+
+[MustModWeapon_Shortbow]
+WeaponName=Shortbow
+
+[MustModWeapon_HeavyCrossbow]
+WeaponName=Heavy Crossbow
+
+[MustModWeapon_LightCrossbow]
+WeaponName=Light Crossbow
+
+[MustModWeapon_Crossbow]
+WeaponName=Crossbow
+
+[MustModWeapon_HeavyCrossbow]
+WeaponName=Heavy Crossbow
+
+[MustModWeapon_Sling]
+WeaponName=Sling
+
+[MustModWeapon_ProjWarbowArrow]
+WeaponName=Warbow Arrow
