@@ -2695,11 +2695,10 @@ simulated function ResetBlends(optional float BlendOutTime = 0.3f, optional bool
  * remap runs on the server and on every client.
  **************************************************************************/
 
-/** True when the equipped primary is one of the archer's ninja weapons (indexes 6..10). */
+/** True when the equipped primary is one of the archer's ninja weapons. */
 simulated function bool MustModIsNinjaPrimary()
 {
-	return PawnInfo.myPrimary == class'MustModWeapon_SpikedMace'
-		|| PawnInfo.myPrimary == class'MustModWeapon_BastardSword'
+	return PawnInfo.myPrimary == class'MustModWeapon_BastardSword'
 		|| PawnInfo.myPrimary == class'MustModWeapon_Kanabo'
 		|| PawnInfo.myPrimary == class'MustModWeapon_Katana'
 		|| PawnInfo.myPrimary == class'MustModWeapon_GrandHammer';

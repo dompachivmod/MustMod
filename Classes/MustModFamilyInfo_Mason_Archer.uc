@@ -11,20 +11,11 @@ DefaultProperties
     // ParryBoxTranslation=(X=10, Z=-28)
 
 	NewPrimaryWeapons.empty;
-	NewPrimaryWeapons(0)=(CWeapon=class'MustModWeapon_Shortbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
-	NewPrimaryWeapons(1)=(CWeapon=class'MustModWeapon_Longbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
-	NewPrimaryWeapons(2)=(CWeapon=class'MustModWeapon_Warbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
-	NewPrimaryWeapons(3)=(CWeapon=class'MustModWeapon_ShortSpearMelee',CForceTertiary=(class'MustModWeapon_Buckler_Mason'))
-	NewPrimaryWeapons(4)=(CWeapon=class'MustModWeapon_JavelinMelee',CForceTertiary=(class'MustModWeapon_Buckler_Mason'))
-	NewPrimaryWeapons(5)=(CWeapon=class'MustModWeapon_HeavyJavelinMelee',CForceTertiary=(class'MustModWeapon_Buckler_Mason'))
-	NewPrimaryWeapons(6)=(CWeapon=class'MustModWeapon_Spear',CorrespondingDuelProp=EDUEL_SpearUse)
-	NewPrimaryWeapons(7)=(CWeapon=class'MustModWeapon_Brandistock',CorrespondingDuelProp=EDUEL_BrandistockUse)
-	NewPrimaryWeapons(8)=(CWeapon=class'MustModWeapon_MasonFlag',CorrespondingDuelProp=EDUEL_SpearUse)
-	NewPrimaryWeapons(9)=(CWeapon=class'MustModWeapon_SpikedMace',CorrespondingDuelProp=EDUEL_DagesseUse)
-	NewPrimaryWeapons(10)=(CWeapon=class'MustModWeapon_BastardSword',CorrespondingDuelProp=EDUEL_LongswordUse)
+	NewPrimaryWeapons(0)=(CWeapon=class'MustModWeapon_Spear',CorrespondingDuelProp=EDUEL_SpearUse)
+	NewPrimaryWeapons(1)=(CWeapon=class'MustModWeapon_Brandistock',CorrespondingDuelProp=EDUEL_BrandistockUse)
+	NewPrimaryWeapons(2)=(CWeapon=class'MustModWeapon_BastardSword',CorrespondingDuelProp=EDUEL_LongswordUse)
 	// NewPrimaryWeapons(11)=(CWeapon=class'MustModWeapon_DoubleBlade',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
 	// NewPrimaryWeapons(11)=(CWeapon=class'MustModWeapon_GrandLance')
-	// NewPrimaryWeapons(10)=(CWeapon=class'MustModWeapon_SpikedMace',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
 	// NewPrimaryWeapons(11)=(CWeapon=class'MustModWeapon_Firebug')
 	// NewPrimaryWeapons(12)=(CWeapon=class'MustModWeapon_BoStaff',CorrespondingDuelProp=EDUEL_BillUse)
 
@@ -41,10 +32,8 @@ DefaultProperties
 
 
 	NewTertiaryWeapons.empty;
-	NewTertiaryWeapons(0)=(CWeapon=class'AOCWeapon_ProjBodkin',bEnabledDefault=false)
-	NewTertiaryWeapons(1)=(CWeapon=class'AOCWeapon_ProjBroadhead',bEnabledDefault=false)
-	NewTertiaryWeapons(2)=(CWeapon=class'MustModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
-	NewTertiaryWeapons(3)=(CWeapon=class'MustModWeapon_Buckler_Mason',bEnabledDefault=false)
+	NewTertiaryWeapons(0)=(CWeapon=class'MustModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
+	NewTertiaryWeapons(1)=(CWeapon=class'MustModWeapon_Buckler_Mason',bEnabledDefault=false)
 	
 
 

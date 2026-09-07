@@ -15,6 +15,33 @@ carried the saturation and auto-netspeed diagnostics, which are staying.
 Left alone: `ClientNotifyPlayerTalking` and `bEnableProximityChat`. That proximity filtering
 predates this work and is now inert with the enabler gone; say the word if it should go too.
 
+## Archer flag/spiked mace removed (2026-09-07)
+
+Removed from Archer's primary weapon list (`MustModFamilyInfo_Agatha_Archer.uc` and
+`MustModFamilyInfo_Mason_Archer.uc`): the team flag weapon (`MustModWeapon_AgathaFlag` /
+`MustModWeapon_MasonFlag`) and `MustModWeapon_SpikedMace`. `MustModWeapon_BastardSword`
+renumbered down to fill the gap left in `NewPrimaryWeapons`.
+
+Followup: deleted the now-unused weapon/attachment classes entirely rather than just
+delisting them, since nothing else referenced them --
+`MustModWeapon_AgathaFlag/MasonFlag/SpikedMace`,
+`MustModWeaponAttachment_AgathaFlag/MasonFlag/SpikedMace`, and
+`MustModInventoryAttachment_AgathaFlag/MasonFlag`. Also dropped the dead
+`MustModWeapon_SpikedMace` check from `MustModPawn.uci`'s `MustModIsNinjaPrimary()` (the
+other four ninja-skin weapons are untouched).
+
+## Archer reduced to polearms only (2026-09-08)
+
+Removed all bows and javelins from Archer's primary list in
+`MustModFamilyInfo_Agatha_Archer.uc` and `MustModFamilyInfo_Mason_Archer.uc`:
+Shortbow, Longbow, Warbow, Short Spear (melee), Javelin (melee) and Heavy Javelin (melee).
+Remaining primaries are Spear, Brandistock and Bastard Sword, renumbered to 0-2.
+
+Also removed the now-useless Bodkin and Broadhead arrow entries from `NewTertiaryWeapons`,
+leaving Hunting Knife and Buckler (renumbered to 0-1). Secondaries are unchanged.
+
+Archer now has no ranged option at all and is effectively a second polearm class.
+
 Changelog
 =========
 
