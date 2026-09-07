@@ -14,14 +14,14 @@ defaultproperties
 
 	CharacterMeshPath="CH_MasonKnight_DLC1.models.SK_Char_knight"
 	DecapMeshPath="CH_MasonKnight_DLC1.models.SK_Char_knight_gore"
-	OwnerMeshPath="MustmodCharacters.MasonKnightDLC1p"
+	OwnerMeshPath="SlumpCharacters.MasonKnightDLC1p"
 
 	HeadMaterialPath="CH_MasonKnight_DLC1.Materials.MI_CH_3P_Knight_Body"
 	BodyMaterialPath="CH_MasonKnight_DLC1.Materials.MI_CH_3P_Knight_Head"
 
 	StandinMesh=SkeletalMesh'CH_MasonKnight.models.SK_CH_3P_MasonKnight'
 	StandinDecapMesh=SkeletalMesh'CH_MasonKnight.models.SK_CH_3P_MasonKnight_Gore'
-	StandinOwnerMesh=SkeletalMesh'MustmodCharacters.MasonKnightDLC1p'
+	StandinOwnerMesh=SkeletalMesh'SlumpCharacters.MasonKnightDLC1p'
 	StandinHeadMaterial=MaterialInterface'CH_MasonKnight.Materials.MI_CH_3P_MasonKnight_Body'
 	StandinBodyMaterial=MaterialInterface'CH_MasonKnight.Materials.MI_CH_3P_MasonKnight_Head'
 

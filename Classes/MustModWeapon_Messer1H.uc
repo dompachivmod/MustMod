@@ -175,7 +175,7 @@ DefaultProperties
 	WeaponIdentifier="1hsharp"
 
 	CurrentGenWeaponType=EWT_1hand
-	AlternativeMode=class'SlumpModWeapon_Messer'
+	AlternativeMode=class'MustModWeapon_Messer'
 
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Messer1H]

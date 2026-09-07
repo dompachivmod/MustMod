@@ -201,7 +201,7 @@ DefaultProperties
 	BloodSprayTemplates(1)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
-	AttachmentClass=class'MustModWeaponAttachment_BoStaff'
+	AttachmentClass=class'MustModWeaponAttachment_QuarterStaff'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Bill'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Bill

@@ -14,7 +14,7 @@ defaultproperties
 
 	CharacterMeshPath="CH_Barb_MasonArcher.models.SK_CH_3P_Barb_MasonArcher"
 	DecapMeshPath="CH_Barb_MasonArcher.models.SK_CH_3P_Barb_MasonArcher_Gore"
-	OwnerMeshPath="MustmodCharacters.MArcherBarb1p"
+	OwnerMeshPath="SlumpCharacters.MArcherBarb1p"
 
 	HeadMaterialPath="CH_Barb_MasonArcher.Materials.MI_CH_3P_Barb_MasonArcher_Body"
 	BodyMaterialPath="CH_Barb_MasonArcher.Materials.MI_CH_3P_Barb_MasonArcher_Head"

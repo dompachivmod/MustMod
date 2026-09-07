@@ -13,8 +13,8 @@ defaultproperties
 	StandinMesh=SkeletalMesh'TurtleFFA.TurtleFFA'
 	StandinDecapMesh=SkeletalMesh'TurtleFFA.TurtleFFA'
 	StandinOwnerMesh=SkeletalMesh'TurtleFFA.TurtleFFA_1p'
-	StandinHeadMaterial=MaterialInterface'TurtleFFA.TurtleFFAHead'
-	StandinBodyMaterial=MaterialInterface'TurtleFFA.TurtleFFABody'
+	StandinHeadMaterial=MaterialInterface'TurtleFFA.TurtleFFA_Mat'
+	StandinBodyMaterial=MaterialInterface'TurtleFFA.TurtleFFA_Mat'
 
 	PhysAsset=PhysicsAsset'CH_AgathanMaa_PKG.SkeletalMesh.SK_CH_3P_AgathaMaa_Physics'
 
