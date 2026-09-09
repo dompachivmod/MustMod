@@ -558,7 +558,7 @@ DefaultProperties
     DefaultAIControllerClass=class'MustModAOCCombatBot'
 
     //This is the name that shows in the server browser for this mod:
-    ModDisplayString="SlumpMod 2.5.0"
+    ModDisplayString="MustMod"
 
     Families.Empty;
     Families(ECLASS_Archer)=class'MustModFamilyInfo_Agatha_Archer'

@@ -42,6 +42,17 @@ leaving Hunting Knife and Buckler (renumbered to 0-1). Secondaries are unchanged
 
 Archer now has no ranged option at all and is effectively a second polearm class.
 
+## Server browser name changed to "MustMod" (2026-09-09)
+
+`ModDisplayString` in `MustModGame.uci` was still `"SlumpMod 2.5.0"`, so the mod
+advertised itself under the old lineage name in the server browser. Now `"MustMod"`.
+
+Left alone deliberately: the `AOCTO-Slumpshill_p` / `AOCTO-Slumppost_p` map names and the
+`?modname=Slump3` admin travel command (those are real map/mod identifiers, not branding),
+the `SlumpStats` endpoints and `slumpmod-production` server id in `MustMod.ini`, the
+`"=== Welcome to SlumpMod ==="` join message, and `MustModKOTH.uc`'s own
+`ModDisplayString="Chivalry: Advanced"` override, which still wins for KOTH.
+
 Changelog
 =========
 
