@@ -46,6 +46,10 @@ var float fComboTransitionStartTime;  // When transition state began
 var bool bExhaustedMiss;
 var float fExhaustedMissRecovery;  // Flat recovery length, in seconds
 
+// Feint recovery for overhead feints only. Vanilla uses FeintTime for slash and overhead alike;
+// a weapon that sets this (> 0) gets its own overhead value. Combo and stab feints are unchanged.
+var float OverheadFeintTime;
+
 // Returns true when the weapon is in a riposte flow and should ignore flinch.
 simulated function bool IsRiposteFlinchProtected()
 {
@@ -174,7 +178,17 @@ simulated state Feint
 {
 	simulated event BeginState(Name PreviousStateName)
 	{
+		local bool bWasInCombo;
+
+		bWasInCombo = IsInCombo();  // super clears it
 		super.BeginState(PreviousStateName);
+		// Overhead feints with their own recovery: redo AOCWeapon's reset and EndFeint timer
+		// with OverheadFeintTime instead of FeintTime.
+		if (!bWasInCombo && CurrentFireMode == Attack_Overhead && OverheadFeintTime > 0)
+		{
+			AOCOwner.ManualReset(OverheadFeintTime);
+			SetTimer(OverheadFeintTime, false, 'EndFeint');
+		}
 		bIsInCombo = false;
 		bJustPlayedCombo = false;
 		MissCount = 0;  // Reset miss counter on feint

@@ -230,8 +230,9 @@ DefaultProperties
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Brandistock]
 	 */
 	iFeintStaminaCost=16
-	FeintTime=0.35
+	FeintTime=0.57
 	TertiaryFeintTime=0.4
+	OverheadFeintTime=0.82
 	fParryNegation=24
 	ParryDrain(0)=26
 	ParryDrain(1)=29
@@ -246,7 +247,7 @@ DefaultProperties
 	SprintAttackHorizRotateSpeed=25000.0
 	SprintAttackVerticalRotateSpeed=20000.0
 	WindupAnimations(0)=(AnimationName=3p_spear_smashdowntoup,ComboAnimation=3p_spear_smash011altdowntoup,AlternateAnimation=3p_spear_smash011altdowntoup,AssociatedSoundCue=,bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.6,fBlendInTime=0.10,fBlendOutTime=0.00,bLastAnimation=false)
-	WindupAnimations(1)=(AnimationName=3p_spear_stab02downtoup,ComboAnimation=3p_spear_stab021downtoup,AlternateAnimation=3p_spear_stab021downtoup,AssociatedSoundCue=,bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.85,fBlendInTime=0.10,fBlendOutTime=0.00,bLastAnimation=false)
+	WindupAnimations(1)=(AnimationName=3p_spear_stab02downtoup,ComboAnimation=3p_spear_stab021downtoup,AlternateAnimation=3p_spear_stab021downtoup,AssociatedSoundCue=,bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.78,fBlendInTime=0.10,fBlendOutTime=0.00,bLastAnimation=false)
 	WindupAnimations(2)=(AnimationName=3p_spear_stab01downtoup,ComboAnimation=,AssociatedSoundCue=,bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.675,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
 	WindupAnimations(3)=(AnimationName=3p_spear_sattackdowntoup_new,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Footsteps.Paladin_Dirt_Jump',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.65,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false,bUseAltBoneBranch=true,bUseRMM=true)
 	WindupAnimations(4)=(AnimationName=3p_spear_parryib,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_Parry',bFullBody=False,bCombo=False,bLoop=False,bForce=false,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)

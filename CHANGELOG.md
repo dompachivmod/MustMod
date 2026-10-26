@@ -1,3 +1,18 @@
+## Spear and Brandistock: faster overhead, separate overhead feint recovery (2026-10-26)
+
+**Overhead windup** (`WindupAnimations(1)`): Spear 0.75 -> 0.68, Brandistock 0.85 -> 0.78.
+
+**Feint recovery**, both weapons: slash 0.57 (`FeintTime`; was Spear 0.40, Brandistock 0.35)
+and overhead 0.82 (new `OverheadFeintTime`; overhead used `FeintTime` before). Stab
+(`TertiaryFeintTime`: Spear 0.425, Brandistock 0.40) and combo feints (0.50) unchanged.
+
+**OverheadFeintTime** (`MustModMeleeWeapon.uc`): vanilla has one feint time for slash and
+overhead. A weapon that sets `OverheadFeintTime` > 0 gets its own value for non-combo overhead
+feints: `Feint.BeginState` redoes AOCWeapon's `ManualReset` and `EndFeint` timer with it. Every
+other weapon leaves it at 0 and behaves as before.
+
+NOT YET COMPILED.
+
 ## Miss mechanic removed (2026-10-26)
 
 The near-miss / hitstop parry recovery cut (the 2026-10-16 "Miss mechanic" entry) is gone,
