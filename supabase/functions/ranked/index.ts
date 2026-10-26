@@ -370,16 +370,36 @@ async function connect(body: Record<string, unknown>) {
 
 // ---- Discord -----------------------------------------------------------------------------
 //
-// Optional: leave DISCORD_MATCHES_WEBHOOK / DISCORD_LEADERBOARD_WEBHOOK unset to switch a
-// post off. Each may hold several webhook URLs separated by commas, one per Discord server;
-// every post goes to all of them. Posts run after the reply is built and never throw into
-// it, so Discord being down cannot lose or delay a result.
+// Webhook URLs live in ranked_settings, so they can be read and edited in the Supabase Table
+// Editor: key `discord_matches_webhooks` / `discord_leaderboard_webhooks`, value one or more
+// URLs separated by commas, spaces or new lines, one per Discord server. Every post goes to all
+// of them. A key that is missing falls back to the old DISCORD_MATCHES_WEBHOOK /
+// DISCORD_LEADERBOARD_WEBHOOK secrets; no URLs at all switches that post off. Posts run after the
+// reply is built and never throw into it, so Discord being down cannot lose or delay a result.
 
-const webhookList = (name: string) =>
-  (Deno.env.get(name) ?? "").split(/[\s,]+/).filter(Boolean);
+type WebhookKind = "matches" | "leaderboard";
+const WEBHOOK_SETTING: Record<WebhookKind, string> = {
+  matches: "discord_matches_webhooks",
+  leaderboard: "discord_leaderboard_webhooks",
+};
+const WEBHOOK_SECRET: Record<WebhookKind, string> = {
+  matches: "DISCORD_MATCHES_WEBHOOK",
+  leaderboard: "DISCORD_LEADERBOARD_WEBHOOK",
+};
 
-const MATCHES_WEBHOOKS = webhookList("DISCORD_MATCHES_WEBHOOK");
-const LEADERBOARD_WEBHOOKS = webhookList("DISCORD_LEADERBOARD_WEBHOOK");
+const splitUrls = (s: string) => s.replace(/["']/g, "").split(/[\s,]+/).filter(Boolean);
+
+/** The webhook URLs for a post, read fresh each time so an edit in the table applies at once. */
+async function webhookUrls(kind: WebhookKind): Promise<string[]> {
+  const row = must(
+    await db.from("ranked_settings").select("value").eq("key", WEBHOOK_SETTING[kind]).maybeSingle(),
+  ) as { value: string } | null;
+  return splitUrls(row ? row.value : Deno.env.get(WEBHOOK_SECRET[kind]) ?? "");
+}
+
+/** "webhook 1562…" in error messages: names the failing one without printing its token. */
+const webhookLabel = (url: string) => `webhook ${url.match(/webhooks\/(\d+)/)?.[1] ?? "(not a webhook URL)"}`;
+
 const LEADERBOARD_SIZE = 20;
 const AGATHA_COLOUR = 0x3b82f6;
 const MASON_COLOUR = 0xdc2626;
@@ -417,9 +437,10 @@ async function discordSend(url: string, body: Record<string, unknown>, messageId
 
 /** Run send for every webhook; one server failing does not stop the others. */
 async function toEach(urls: string[], send: (url: string) => Promise<unknown>) {
-  const failed = (await Promise.allSettled(urls.map(send)))
-    .filter((r): r is PromiseRejectedResult => r.status === "rejected")
-    .map((r) => String(r.reason));
+  const results = await Promise.allSettled(urls.map(send));
+  const failed = results
+    .map((r, i) => r.status === "rejected" ? `${webhookLabel(urls[i])}: ${r.reason}` : null)
+    .filter((f): f is string => f !== null);
   if (failed.length) throw new Error(failed.join("; "));
 }
 
@@ -451,8 +472,9 @@ async function postMatchResult(
   lineup: MatchPlayer[],
   changes: Change[],
   stats: Map<string, unknown>,
-  webhooks = MATCHES_WEBHOOKS,
+  only?: string[],
 ) {
+  const webhooks = only ?? await webhookUrls("matches");
   if (!webhooks.length) return;
 
   const s1 = match.team1_score;
@@ -482,7 +504,8 @@ async function postMatchResult(
   }));
 }
 
-async function postAbandoned(match: MatchRow, changes: Change[], stats: Map<string, unknown>, webhooks = MATCHES_WEBHOOKS) {
+async function postAbandoned(match: MatchRow, changes: Change[], stats: Map<string, unknown>, only?: string[]) {
+  const webhooks = only ?? await webhookUrls("matches");
   if (!webhooks.length) return;
 
   const leavers = changes
@@ -507,21 +530,27 @@ async function postAbandoned(match: MatchRow, changes: Change[], stats: Map<stri
 }
 
 /**
- * Post every finished and abandoned match so far, oldest first, from what the database
- * already holds. One-off for matches played before the webhook existed: running it again
- * posts them all again. Spaced out to stay under Discord's webhook rate limit.
+ * Post finished and abandoned matches, oldest first, from what the database already holds:
+ * for matches played before a channel's webhook existed. Spaced out to stay under Discord's
+ * webhook rate limit, so it goes in batches (one request may only run so long): `skip` matches
+ * are passed over and at most `limit` posted; the reply's `next` is the `skip` for the next
+ * batch, or null when done.
  *
- * `only` is the 1-based position of one URL in DISCORD_MATCHES_WEBHOOK, to backfill a newly
+ * `only` is the 1-based position of one URL in the matches webhook list, to backfill a newly
  * added channel without reposting everything to the channels that already have it.
  */
-async function postHistory(only?: number): Promise<number> {
-  if (!MATCHES_WEBHOOKS.length) throw new Error("DISCORD_MATCHES_WEBHOOK is not set");
-  let webhooks = MATCHES_WEBHOOKS;
+async function postHistory(only?: number, skip = 0, limit = 40) {
+  const all = await webhookUrls("matches");
+  if (!all.length) throw new Error(`no matches webhook: set ${WEBHOOK_SETTING.matches} in ranked_settings`);
+  let webhooks = all;
   if (only !== undefined) {
-    if (!Number.isInteger(only) || only < 1 || only > MATCHES_WEBHOOKS.length) {
-      throw new Error(`webhook must be 1..${MATCHES_WEBHOOKS.length}`);
+    if (!Number.isInteger(only) || only < 1 || only > all.length) {
+      throw new Error(`webhook must be 1..${all.length}`);
     }
-    webhooks = [MATCHES_WEBHOOKS[only - 1]];
+    webhooks = [all[only - 1]];
+  }
+  if (!Number.isInteger(skip) || skip < 0 || !Number.isInteger(limit) || limit < 1) {
+    throw new Error("skip must be 0 or more and limit 1 or more");
   }
 
   const matches = must(
@@ -532,7 +561,8 @@ async function postHistory(only?: number): Promise<number> {
       .order("finished_at", { ascending: true }),
   ) as MatchRow[];
 
-  for (const match of matches) {
+  const batch = matches.slice(skip, skip + limit);
+  for (const match of batch) {
     const rows = must(
       await db
         .from("ranked_match_players")
@@ -557,21 +587,21 @@ async function postHistory(only?: number): Promise<number> {
     }
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }
-  return matches.length;
+  const end = skip + batch.length;
+  return { posted: batch.length, total: matches.length, next: end < matches.length ? end : null };
 }
 
 /**
  * ranked_settings key holding a webhook's leaderboard message id. The first webhook keeps the
  * original key so its existing message is still edited; the rest are keyed by webhook id.
  */
-const leaderboardKey = (url: string) =>
-  url === LEADERBOARD_WEBHOOKS[0]
-    ? "leaderboard_message_id"
-    : `leaderboard_message_id:${url.match(/webhooks\/(\d+)/)?.[1] ?? url}`;
+const leaderboardKey = (url: string, first: boolean) =>
+  first ? "leaderboard_message_id" : `leaderboard_message_id:${url.match(/webhooks\/(\d+)/)?.[1] ?? url}`;
 
 /** One leaderboard message per webhook, edited in place after every match. */
 async function updateLeaderboard() {
-  if (!LEADERBOARD_WEBHOOKS.length) return;
+  const webhooks = await webhookUrls("leaderboard");
+  if (!webhooks.length) return;
 
   const top = must(
     await db
@@ -598,8 +628,8 @@ async function updateLeaderboard() {
     }],
   };
 
-  await toEach(LEADERBOARD_WEBHOOKS, async (url) => {
-    const key = leaderboardKey(url);
+  await toEach(webhooks, async (url) => {
+    const key = leaderboardKey(url, url === webhooks[0]);
     const stored = must(
       await db.from("ranked_settings").select("value").eq("key", key).maybeSingle(),
     ) as { value: string } | null;
@@ -638,11 +668,19 @@ Deno.serve(async (req) => {
       case "cancel":
         return reply(await cancel(server, body));
       case "history":
-        // One-off: post every past match to the match-history channel(s). Body {"webhook": 2}
-        // posts only to the 2nd URL in DISCORD_MATCHES_WEBHOOK.
+        // Post past matches to the match-history channel(s), in batches. Body {"webhook": 2}
+        // posts only to the 2nd matches URL; {"skip": 40} continues from the reply's `next`;
+        // {"limit": n} sets the batch size (default 40, about 80 s).
         try {
-          const only = (body as { webhook?: unknown }).webhook;
-          return reply({ ok: true, posted: await postHistory(only === undefined ? undefined : Number(only)) });
+          const { webhook, skip, limit } = body as { webhook?: unknown; skip?: unknown; limit?: unknown };
+          return reply({
+            ok: true,
+            ...await postHistory(
+              webhook === undefined ? undefined : Number(webhook),
+              skip === undefined ? 0 : Number(skip),
+              limit === undefined ? 40 : Number(limit),
+            ),
+          });
         } catch (e) {
           return reply({ ok: false, error: String(e) }, 502);
         }

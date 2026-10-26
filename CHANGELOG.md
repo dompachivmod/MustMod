@@ -1,3 +1,21 @@
+## Ranked: Discord webhooks in ranked_settings, resumable backfill (2026-10-26)
+
+**Webhooks** (`supabase/functions/ranked/index.ts`): the URLs are read from `ranked_settings`
+rows instead of function secrets, so they can be seen and edited in the Supabase Table Editor:
+key `discord_matches_webhooks` / `discord_leaderboard_webhooks`, value one or more URLs
+separated by commas, spaces or new lines (quotes are ignored). Read fresh on every post, so an
+edit applies at once. A missing key falls back to the old `DISCORD_*_WEBHOOK` secrets.
+
+**Errors name the webhook**: a failed post says `webhook <id>: Discord 401 ...` (id only, never
+the token), so a broken URL in a list of several can be found.
+
+**history in batches**: one request posted every past match 2 s apart and was cut off by
+Supabase's limit on how long a request may run. It now posts `limit` matches (default 40)
+after skipping `skip`, and replies `{posted, total, next}`; call again with `"skip": next`
+until `next` is null. `"webhook": n` still picks one channel.
+
+NOT YET DEPLOYED.
+
 ## Spear and Brandistock: faster overhead, separate overhead feint recovery (2026-10-26)
 
 **Overhead windup** (`WindupAnimations(1)`): Spear 0.75 -> 0.68, Brandistock 0.85 -> 0.78.
