@@ -539,7 +539,7 @@ async function postAbandoned(match: MatchRow, changes: Change[], stats: Map<stri
  * `only` is the 1-based position of one URL in the matches webhook list, to backfill a newly
  * added channel without reposting everything to the channels that already have it.
  */
-async function postHistory(only?: number, skip = 0, limit = 40) {
+async function postHistory(only?: number, skip = 0, limit = 40, dry = false) {
   const all = await webhookUrls("matches");
   if (!all.length) throw new Error(`no matches webhook: set ${WEBHOOK_SETTING.matches} in ranked_settings`);
   let webhooks = all;
@@ -562,6 +562,15 @@ async function postHistory(only?: number, skip = 0, limit = 40) {
   ) as MatchRow[];
 
   const batch = matches.slice(skip, skip + limit);
+  if (dry) {  // what a batch would post, to find where an earlier backfill stopped
+    return {
+      total: matches.length,
+      matches: batch.map((m, i) => ({
+        n: skip + i, finished_at: m.finished_at, server: m.server, status: m.status,
+        score: m.team1_score !== null && m.team2_score !== null ? `${m.team1_score}-${m.team2_score}` : null,
+      })),
+    };
+  }
   for (const match of batch) {
     const rows = must(
       await db
@@ -672,13 +681,14 @@ Deno.serve(async (req) => {
         // posts only to the 2nd matches URL; {"skip": 40} continues from the reply's `next`;
         // {"limit": n} sets the batch size (default 40, about 80 s).
         try {
-          const { webhook, skip, limit } = body as { webhook?: unknown; skip?: unknown; limit?: unknown };
+          const { webhook, skip, limit, dry } = body as { webhook?: unknown; skip?: unknown; limit?: unknown; dry?: unknown };
           return reply({
             ok: true,
             ...await postHistory(
               webhook === undefined ? undefined : Number(webhook),
               skip === undefined ? 0 : Number(skip),
               limit === undefined ? 40 : Number(limit),
+              dry === true,  // {"dry": true}: list the batch's matches, post nothing
             ),
           });
         } catch (e) {

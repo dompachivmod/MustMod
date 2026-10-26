@@ -14,7 +14,7 @@ Supabase's limit on how long a request may run. It now posts `limit` matches (de
 after skipping `skip`, and replies `{posted, total, next}`; call again with `"skip": next`
 until `next` is null. `"webhook": n` still picks one channel.
 
-NOT YET DEPLOYED.
+Deployed 2026-10-26. `"dry": true` lists a batch's matches (number, time, server, score) without posting, to find where an earlier backfill stopped.
 
 ## Spear and Brandistock: faster overhead, separate overhead feint recovery (2026-10-26)
 
