@@ -222,7 +222,7 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Bill]
 	 */
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.35
 	TertiaryFeintTime=0.45
 	ComboFeintTime=0.55

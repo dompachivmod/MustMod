@@ -51,8 +51,6 @@ DefaultProperties
 		bCauseActorAnimEnd=true
 	End Object
 
-	HorizontalRotateSpeed = 65000
-	VerticalRotateSpeed = 50000
 	bTwoHander=false
 	EncircleRadius=25.0f
 	EffectiveDistance=200.0f
@@ -180,7 +178,7 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Messer1H]
 	 */
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.35
 	TertiaryFeintTime=0.45
 	fParryNegation=17
@@ -192,8 +190,8 @@ DefaultProperties
 	WeaponSmallPortrait="UI_WeaponImages_SWF.icon_weapon_select_messer_png"
 	WeaponReach=100
 	HorizontalRotateSpeed=55000.0
-	VerticalRotateSpeed=55000.0
-	AttackHorizRotateSpeed=65000.0
+	VerticalRotateSpeed=50000.0
+	AttackHorizRotateSpeed=50000.0
 	SprintAttackHorizRotateSpeed=20000.0
 	SprintAttackVerticalRotateSpeed=20000.0
 	WindupAnimations(0)=(AnimationName=3p_1hsharp_slash01downtoup,ComboAnimation=3p_1hsharp_slash011downtoup,AlternateAnimation=3p_1hsharp_slash011altdowntoup,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.broadsword_windup',bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.10,fBlendOutTime=0.00,bLastAnimation=false,fShieldAnimLength=0.0)

@@ -226,7 +226,7 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Fork]
 	 */
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.3
 	TertiaryFeintTime=0.425
 	fParryNegation=24

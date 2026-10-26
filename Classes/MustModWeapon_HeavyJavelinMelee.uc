@@ -231,7 +231,7 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_HeavyJavelinMelee]
 	 */
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.475
 	TertiaryFeintTime=0.45
 	fParryNegation=12

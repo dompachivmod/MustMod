@@ -176,7 +176,7 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Hatchet]
 	 */
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.400
 	TertiaryFeintTime=0.4
 	fParryNegation=22

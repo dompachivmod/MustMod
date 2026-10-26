@@ -359,7 +359,7 @@ DefaultProperties
 	StabHorizRotateSpeed=40000.0
 	StabVertRotateSpeed=40000.0
 	Bcancombo=false
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.3
 	TertiaryFeintTime=0.45
 	fParryNegation=24

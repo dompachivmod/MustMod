@@ -101,7 +101,7 @@ DefaultProperties
 	bHaveShield=false
 	WeaponIdentifier="doubleaxe"
 
-	AlternativeMode=class'MustModWeapon_PoleAxeBack'
+	AlternativeMode=none
 
 	EncircleRadius=25.0f
 	EffectiveDistance=200.0f
@@ -221,7 +221,7 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_PoleAxe]
 	 */
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.3
 	TertiaryFeintTime=0.45
 	fParryNegation=25

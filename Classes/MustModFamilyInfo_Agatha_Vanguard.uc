@@ -14,17 +14,11 @@ DefaultProperties
 	NewPrimaryWeapons(5)=(CWeapon=class'MustModWeapon_Halberd',CorrespondingDuelProp=EDUEL_HalberdUse)
 	NewPrimaryWeapons(6)=(CWeapon=class'MustModWeapon_PoleHammer',CorrespondingDuelProp=EDUEL_PoleHammerUse)
 	NewPrimaryWeapons(7)=(CWeapon=class'MustModWeapon_Nodachi',CorrespondingDuelProp=EDUEL_ZweihanderUse)
-	NewPrimaryWeapons(8)=(CWeapon=class'MustModWeapon_DoubleBlade',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
-	NewPrimaryWeapons(9)=(CWeapon=class'MustModWeapon_Fork',CorrespondingDuelProp=EDUEL_ForkUse)
+	NewPrimaryWeapons(8)=(CWeapon=class'MustModWeapon_Fork',CorrespondingDuelProp=EDUEL_ForkUse)
 	
 	NewSecondaryWeapons.empty;
 
-	NewSecondaryWeapons(0)=(CWeapon=class'MustModWeapon_Saber')
-	NewSecondaryWeapons(1)=(CWeapon=class'MustModWeapon_Cudgel')
-	NewSecondaryWeapons(3)=(CWeapon=class'MustModWeapon_WarAxe')
-	NewSecondaryWeapons(4)=(CWeapon=class'MustModWeapon_Dane')
-	NewSecondaryWeapons(5)=(CWeapon=class'MustModWeapon_Falchion')
-	NewSecondaryWeapons(6)=(CWeapon=class'MustModWeapon_Dagesse')
+	NewSecondaryWeapons(0)=(CWeapon=class'MustModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
 
 	DamageResistances(EDMG_Swing) = 0.6
 	DamageResistances(EDMG_Pierce) = 0.8

@@ -212,7 +212,7 @@ DefaultProperties
 	/*
 	 * Using Polearm (Halberd) animation set with GrandMace-level damage
 	 */
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.325
 	TertiaryFeintTime=0.5
 	fParryNegation=24

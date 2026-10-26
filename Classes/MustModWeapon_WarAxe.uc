@@ -176,7 +176,7 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_WarAxe]
 	 */
-	iFeintStaminaCost=14
+	iFeintStaminaCost=16
 	FeintTime=0.42
 	TertiaryFeintTime=0.475
 	ComboFeintTime=0.52

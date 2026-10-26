@@ -180,7 +180,7 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Greatsword]
 	 */
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.35
 	TertiaryFeintTime=0.46
 	fParryNegation=24

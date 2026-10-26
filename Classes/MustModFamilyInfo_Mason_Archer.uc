@@ -14,21 +14,11 @@ DefaultProperties
 	NewPrimaryWeapons(0)=(CWeapon=class'MustModWeapon_Spear',CorrespondingDuelProp=EDUEL_SpearUse)
 	NewPrimaryWeapons(1)=(CWeapon=class'MustModWeapon_Brandistock',CorrespondingDuelProp=EDUEL_BrandistockUse)
 	NewPrimaryWeapons(2)=(CWeapon=class'MustModWeapon_BastardSword',CorrespondingDuelProp=EDUEL_LongswordUse)
-	// NewPrimaryWeapons(11)=(CWeapon=class'MustModWeapon_DoubleBlade',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
 	// NewPrimaryWeapons(11)=(CWeapon=class'MustModWeapon_GrandLance')
-	// NewPrimaryWeapons(11)=(CWeapon=class'MustModWeapon_Firebug')
 	// NewPrimaryWeapons(12)=(CWeapon=class'MustModWeapon_BoStaff',CorrespondingDuelProp=EDUEL_BillUse)
 
 	NewSecondaryWeapons.empty;
-	NewSecondaryWeapons(0)=(CWeapon=class'MustModWeapon_Broadsword')
-	NewSecondaryWeapons(1)=(CWeapon=class'MustModWeapon_NorseSword')
-	NewSecondaryWeapons(2)=(CWeapon=class'MustModWeapon_Falchion',CorrespondingDuelProp=EDUEL_FalchionUse)
-	NewSecondaryWeapons(3)=(CWeapon=class'AOCWeapon_Cudgel',CorrespondingDuelProp=EDUEL_CudgelUse)
-	NewSecondaryWeapons(4)=(CWeapon=class'MustModWeapon_WarAxe',CorrespondingDuelProp=EDUEL_WarAxeUse)
-	NewSecondaryWeapons(5)=(CWeapon=class'MustModWeapon_Dane',CorrespondingDuelProp=EDUEL_DaneUse)
-	NewSecondaryWeapons(6)=(CWeapon=class'MustModWeapon_Mace',CorrespondingDuelProp=EDUEL_MaceUse)
-	NewSecondaryWeapons(7)=(CWeapon=class'MustModWeapon_MorningStar',CorrespondingDuelProp=EDUEL_MorningStarUse)
-	NewSecondaryWeapons(8)=(CWeapon=class'MustModWeapon_HolyWaterSprinkler',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
+	NewSecondaryWeapons(0)=(CWeapon=class'MustModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
 
 
 	NewTertiaryWeapons.empty;

@@ -217,7 +217,7 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Bearded]
 	 */
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.3
 	TertiaryFeintTime=0.4
 	fParryNegation=25

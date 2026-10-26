@@ -23,6 +23,20 @@ var string StatsMatchId;
 var bool bStatsRequestInFlight;
 var HttpRequestInterface StatsRequest;
 
+// MUSTMOD: ranked mode (MustModRanked). Only MustModLTS spawns one; it is declared here so
+// the shared ShouldCountDown below can consult it, and stays none in every other mode.
+var MustModRanked Ranked;
+
+// MUSTMOD: numbers-only signature of the last top-3 team-damage callout, so an unchanged
+// board stays silent. Reset in StartMatch with the rest of the per-match counters.
+var string LastTeamDamageSignature;
+
+// MUSTMOD: when !rankedhelp was last shown (RealTimeSeconds); 0 = not yet this map.
+var float LastRankedHelpTime;
+
+// MUSTMOD: when !td was last shown (RealTimeSeconds); 0 = not yet this map.
+var float LastTeamDamageListTime;
+
 
 static event class<GameInfo> SetGameType(string MapName, string Options, string Portal)
 {
@@ -65,6 +79,12 @@ function bool ShouldCountDown()
 
     local Controller C;
     local AOCPlayerController PC;
+
+    // MUSTMOD: ranked holds the countdown until matchmaking has locked the teams.
+    if (Ranked != none && !Ranked.AllowsCountdown())
+    {
+        return false;
+    }
 
     AgathaMod = 0;
     MasonMod = 0;
@@ -261,10 +281,111 @@ function int GetActualPlayersCount()
     return PlayerCount;
 }
 
+/**
+ * MUSTMOD: periodic top-3 team-damage callout.
+ *
+ * Team damage has nowhere to live on the scoreboard -- AOCPRI.TeamDamageDealt is
+ * repurposed for the Prys (successful parry) column. The callout reads the whole-map total
+ * in MapTeamDamageDealt (MustModPRI.uci, server-only), counted from match start; it is not
+ * AOCPlayerController.TeamDamageDealt, which the spawn queue zeroes on every respawn.
+ *
+ * Fires on a 5 minute loop started in StartMatch, and stays silent unless the three totals
+ * actually moved, so a quiet round does not spam the same line every five minutes.
+ */
+function AnnounceTopTeamDamage()
+{
+    local AOCPlayerController PC;
+    local `{GAMEMODE}PRI PRI;
+    local array<AOCPRI> TopPRI;
+    local array<int> TopTD;
+    local int i, TD;
+    local string Signature, Line;
+
+    if (WorldInfo == none || WorldInfo.GRI == none)
+    {
+        return;
+    }
+
+    // Insertion sort, capped at three -- the list is tiny and this avoids sorting the
+    // whole player array to throw away all but the top of it.
+    foreach WorldInfo.AllControllers(class'AOCPlayerController', PC)
+    {
+        PRI = `{GAMEMODE}PRI(PC.PlayerReplicationInfo);
+        if (PRI == none)
+        {
+            continue;
+        }
+        TD = PRI.MapTeamDamageDealt;
+
+        if (TD <= 0 || PC.IsVoluntarySpectator())
+        {
+            continue;
+        }
+
+        for (i = 0; i < TopTD.Length; ++i)
+        {
+            if (TD > TopTD[i])
+            {
+                break;
+            }
+        }
+
+        if (i < 3)
+        {
+            TopTD.InsertItem(i, TD);
+            TopPRI.InsertItem(i, PRI);
+
+            if (TopTD.Length > 3)
+            {
+                TopTD.Remove(3, TopTD.Length - 3);
+                TopPRI.Remove(3, TopPRI.Length - 3);
+            }
+        }
+    }
+
+    if (TopTD.Length == 0)
+    {
+        return;
+    }
+
+    // Compare on the numbers only, per the rule: the callout repeats only when someone's
+    // total actually changed. Two players swapping places on identical totals is not a
+    // change worth announcing.
+    for (i = 0; i < TopTD.Length; ++i)
+    {
+        Signature $= string(TopTD[i]) $ "|";
+    }
+
+    if (Signature == LastTeamDamageSignature)
+    {
+        return;
+    }
+
+    LastTeamDamageSignature = Signature;
+
+    // One line, and no leading whitespace. AOCGame.BroadcastMessage strips a message that
+    // starts with a space (Left(Message,1) == " " -> Split), so an indented list silently
+    // loses its indent; and four separate broadcasts every five minutes is a lot of chat.
+    Line = "Top team damage:";
+
+    for (i = 0; i < TopTD.Length; ++i)
+    {
+        if (i > 0)
+        {
+            Line $= ",";
+        }
+
+        Line $= " " $ string(i + 1) $ ". " $ TopPRI[i].PlayerName $ " " $ string(TopTD[i]);
+    }
+
+    BroadcastMessage(none, Line, EFAC_ALL, true, true, "#D1A04A");
+}
+
 function ResetParryScoreboardCounts()
 {
     local int i;
     local AOCPRI PRI;
+    local `{GAMEMODE}PRI ModPRI;
 
     if (WorldInfo == none || WorldInfo.GRI == none)
     {
@@ -278,12 +399,63 @@ function ResetParryScoreboardCounts()
         {
             PRI.TeamDamageDealt = 0;
         }
+
+        // Whole-map team damage counts from match start, not from warmup.
+        ModPRI = `{GAMEMODE}PRI(PRI);
+        if (ModPRI != none)
+        {
+            ModPRI.MapTeamDamageDealt = 0;
+        }
     }
+}
+
+/**
+ * MUSTMOD: runs for every player on every map -- from PostLogin when they join, and from
+ * HandleSeamlessTravelPlayer when a map change or restart carries them over -- in every
+ * mode. Hosts the "!rankedhelp" hint and the ranked join hook.
+ */
+function GenericPlayerInitialization(Controller C)
+{
+    local string StrippedName;
+
+    super.GenericPlayerInitialization(C);
+
+    // Delayed so the client's HUD exists by then; a chat line sent earlier is dropped.
+    if (AOCPlayerController(C) != none)
+    {
+        C.SetTimer(8.0, false, 'MustModShowRankedHint');
+    }
+
+    if (Ranked != none && Ranked.IsConfigured())
+    {
+        Ranked.PlayerJoined(C);
+    }
+    else if (C.PlayerReplicationInfo != none)
+    {
+        // An Elo tag carried over from an LTS map means nothing in other modes, so put the
+        // player's own name back.
+        StrippedName = class'MustModRanked'.static.StripEloTag(C.PlayerReplicationInfo.PlayerName);
+        if (StrippedName != C.PlayerReplicationInfo.PlayerName)
+        {
+            ChangeName(C, StrippedName, false);
+        }
+    }
+}
+
+// MUSTMOD: a finished map plays again instead of moving on in the map rotation. MatchOver
+// waits the usual time and calls RestartGame, which travels to whatever this returns;
+// "?restart" reloads the current map with its URL options (modname and so on) intact.
+// Admin map changes and map votes travel directly and are unaffected.
+function string GetNextMap()
+{
+    return "?restart";
 }
 
 function StartMatch()
 {
     ResetParryScoreboardCounts();
+    LastTeamDamageSignature = "";
+    SetTimer(300.0, true, 'AnnounceTopTeamDamage');
     super.StartMatch();
 
     BeginStatsReporting();
@@ -473,7 +645,149 @@ function BroadcastMessage(PlayerController Sender, string Message, EAOCFaction D
         }
     }
 
+    // MUSTMOD: "!rankedhelp" shows the help to everyone, at most once per 30s server-wide.
+    // The typed line itself is never shown; inside the cooldown it is silently dropped.
+    // Spaces are stripped first, so " !rankedhelp " and "!rankedhelp" both count.
+    if (!bSystemMessage && SenderPC != none && Locs(Repl(Message, " ", "")) == "!rankedhelp")
+    {
+        if (LastRankedHelpTime == 0 || WorldInfo.RealTimeSeconds - LastRankedHelpTime >= 30.0)
+        {
+            LastRankedHelpTime = WorldInfo.RealTimeSeconds;
+            SendRankedHelp(SenderPC);
+        }
+        return;
+    }
+
+    // MUSTMOD: "!td" shows everyone's team damage to everyone, at most once per 60s
+    // server-wide. The typed line is never shown; inside the cooldown only the sender is
+    // told how long is left. Same normalising as above.
+    if (!bSystemMessage && SenderPC != none && Locs(Repl(Message, " ", "")) == "!td")
+    {
+        if (LastTeamDamageListTime == 0 || WorldInfo.RealTimeSeconds - LastTeamDamageListTime >= 60.0)
+        {
+            LastTeamDamageListTime = WorldInfo.RealTimeSeconds;
+            SendTeamDamageList();
+        }
+        else
+        {
+            SenderPC.ReceiveChatMessage("!td can be used again in" @ int(60.0 - (WorldInfo.RealTimeSeconds - LastTeamDamageListTime) + 1) $ "s.", EFAC_ALL, false, true, "#D1A04A");
+        }
+        return;
+    }
+
+    // MUSTMOD: ranked surrender vote, "!ff" then "!yes" / "!no". Same normalising as above.
+    if (!bSystemMessage && SenderPC != none && Ranked != none && Ranked.HandleChatCommand(SenderPC, Locs(Repl(Message, " ", ""))))
+    {
+        return;
+    }
+
     super.BroadcastMessage(Sender, Message, DesignatedTeam, bSystemMessage, bUseCustomColor, Col);
+}
+
+/**
+ * MUSTMOD: the !td reply, shown to everyone. Every player in the game (spectators left out),
+ * highest team damage first, one line each. Reads the whole-map MapTeamDamageDealt, the same
+ * total as the 5-minute top-3 callout (see AnnounceTopTeamDamage).
+ */
+function SendTeamDamageList()
+{
+    local AOCPlayerController PC;
+    local `{GAMEMODE}PRI PRI;
+    local array<`{GAMEMODE}PRI> Sorted;
+    local array<string> Lines;
+    local string Line;
+    local int i;
+
+    // Insertion sort, highest first; ties keep join order.
+    foreach WorldInfo.AllControllers(class'AOCPlayerController', PC)
+    {
+        PRI = `{GAMEMODE}PRI(PC.PlayerReplicationInfo);
+        if (PRI == none || PC.IsVoluntarySpectator())
+        {
+            continue;
+        }
+
+        for (i = 0; i < Sorted.Length; ++i)
+        {
+            if (PRI.MapTeamDamageDealt > Sorted[i].MapTeamDamageDealt)
+            {
+                break;
+            }
+        }
+        Sorted.InsertItem(i, PRI);
+    }
+
+    if (Sorted.Length == 0)
+    {
+        Lines.AddItem("Team damage: no players.");
+    }
+    else
+    {
+        Lines.AddItem("Team damage this map:");
+        for (i = 0; i < Sorted.Length; ++i)
+        {
+            // No leading spaces: chat strips them (see AnnounceTopTeamDamage).
+            Lines.AddItem(string(i + 1) $ ". " $ Sorted[i].PlayerName $ " " $ string(Sorted[i].MapTeamDamageDealt));
+        }
+    }
+
+    foreach WorldInfo.AllControllers(class'AOCPlayerController', PC)
+    {
+        foreach Lines(Line)
+        {
+            PC.ReceiveChatMessage(Line, EFAC_ALL, false, true, "#D1A04A");
+        }
+    }
+}
+
+/**
+ * MUSTMOD: the !rankedhelp reply, shown to everyone. The admin commands go to the admin who
+ * asked only -- they are no use to anyone else.
+ */
+function SendRankedHelp(AOCPlayerController Asker)
+{
+    local array<string> Lines;
+    local string Line;
+    local AOCPlayerController PC;
+
+    if (Ranked == none)
+    {
+        Lines.AddItem("Ranked is played on LTS maps only.");
+    }
+    else
+    {
+        Lines.AddItem("Ranked is" @ (Ranked.bRankedEnabled ? "ON" : "OFF") @ "on this server.");
+    }
+    Lines.AddItem("To play: while ranked is on, pick a team and class on an LTS map to queue.");
+    Lines.AddItem("Any even number of players makes a match (2v2, 3v3, ...); it starts 30s after enough join.");
+    Lines.AddItem("Elo moves 6 per round of margin in an even match (7-5 = 12), more for an upset, less for a favourite.");
+    Lines.AddItem("!ff in chat (after 4 rounds): your team votes to surrender with !yes / !no. Over 60% yes ends the match after the current round; you lose by your round deficit + 1.");
+    Lines.AddItem("voteranked (console): start a vote to turn ranked on.");
+    Lines.AddItem("voteunranked (console): start a vote to turn it off (between matches).");
+
+    foreach WorldInfo.AllControllers(class'AOCPlayerController', PC)
+    {
+        foreach Lines(Line)
+        {
+            PC.ReceiveChatMessage(Line, EFAC_ALL, false, true, class'MustModRanked'.const.CHAT_COLOUR, false);
+        }
+    }
+
+    if (Asker.PlayerReplicationInfo != none && Asker.PlayerReplicationInfo.bAdmin)
+    {
+        Lines.Length = 0;
+        Lines.AddItem("Admin: admin RankedMode 1|0 -- turn ranked on/off.");
+        Lines.AddItem("Admin: adminstartmatch -- start now with an even number queued (any size).");
+        Lines.AddItem("Admin: adminterminatematch -- end the ranked match, no Elo changes.");
+        Lines.AddItem("Admin: admin RankedExtend [seconds] / admin RankedAbandon -- during a leaver pause.");
+        Lines.AddItem("Admin: admin RankedMinTeamSize <n> / admin RankedMaxTeamSize <n> -- match size limits, per side.");
+        Lines.AddItem("Admin: admindisablerat 1|0 -- no Man-at-Arms in ranked matches (current ones respawn as Knight with Longsword).");
+
+        foreach Lines(Line)
+        {
+            Asker.ReceiveChatMessage(Line, EFAC_ALL, false, true, class'MustModRanked'.const.CHAT_COLOUR, false);
+        }
+    }
 }
 
 /**

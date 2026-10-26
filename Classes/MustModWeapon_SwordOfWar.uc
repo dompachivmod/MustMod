@@ -179,7 +179,7 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_SwordOfWar]
 	 */
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.28
 	TertiaryFeintTime=0.45
 	ComboFeintTime=0.475

@@ -222,7 +222,7 @@ defaultproperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_PoleHammer]
 	 */
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.3
 	TertiaryFeintTime=0.45
 	ComboFeintTime=0.55

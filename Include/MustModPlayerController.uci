@@ -76,6 +76,14 @@ var name    nMustModViewBlockWhere;  // which hook refused it, for FPSpectateDeb
 var bool  bIsPaused;              // true while an admin has the game paused
 var int   UnpauseCountdownTime;   // countdown start value (default 3)
 
+// MUSTMOD: overadmin (see MustModOverAdmin). Server-side only; dropped with AdminLogout,
+// since IsOverAdmin also requires bAdmin, and on map change like admin.
+var bool  bOverAdmin;
+var int   iOverAdminLoginFailures;  // per connection; capped at MustModOverAdmin.MAX_LOGIN_FAILURES
+
+// MUSTMOD: setname is open to everyone, so non-admins are rate limited.
+var float fNextSetNameTime;         // WorldInfo.TimeSeconds before which a rename is refused
+
 // MUSTMOD: inebriate on any map (see the block above ClientInebriate for the why).
 // Declared up here because UnrealScript requires every var before the first function
 // in the class body -- and this .uci is pasted straight into one.
@@ -504,6 +512,130 @@ reliable server function bool IsAdmin() {
 	return WorldInfo.Game.AccessControl.IsAdmin(self) || WorldInfo.NetMode == NM_Standalone;
 }
 
+/** Server side. An overadmin is also an admin, so AdminLogout ends both. */
+function bool IsOverAdmin() {
+	return WorldInfo.NetMode == NM_Standalone || (bOverAdmin && PlayerReplicationInfo.bAdmin);
+}
+
+// MUSTMOD: overadmin login. The password is OverAdminPassword in [MustMod.MustModOverAdmin]
+// in the server's UDKGame.ini; empty disables it. Grants admin too, announced like AdminLogin.
+exec function OverAdminLogin(string Password) {
+	if (Password != "")
+		ServerOverAdminLogin(Password);
+}
+
+reliable server function ServerOverAdminLogin(string Password) {
+	if (bOverAdmin && PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are already logged in as an overadmin.");
+		return;
+	}
+	if (!class'MustModOverAdmin'.static.IsEnabled()) {
+		ClientDisplayConsoleMessage("Overadmin is not enabled on this server.");
+		return;
+	}
+	if (iOverAdminLoginFailures >= class'MustModOverAdmin'.const.MAX_LOGIN_FAILURES) {
+		ClientDisplayConsoleMessage("Too many failed overadmin logins. Reconnect to try again.");
+		return;
+	}
+	if (!class'MustModOverAdmin'.static.CheckPassword(Password)) {
+		iOverAdminLoginFailures++;
+		LogAlwaysInternal("MustMod: failed overadmin login by" @ PlayerReplicationInfo.PlayerName);
+		ClientDisplayConsoleMessage("Wrong overadmin password.");
+		return;
+	}
+
+	bOverAdmin = true;
+	if (!PlayerReplicationInfo.bAdmin) {
+		PlayerReplicationInfo.bAdmin = true;
+		WorldInfo.Game.AccessControl.AdminEntered(self);
+	}
+	LogAlwaysInternal("MustMod: overadmin login by" @ PlayerReplicationInfo.PlayerName);
+	S_AdminBroadcastMessage(PlayerReplicationInfo.PlayerName @ "logged in as overadmin.", false);
+}
+
+// MUSTMOD: spawning bots is overadmin-only. These shadow the AOCGame exec functions of the
+// same names: "admin addbots 4" runs on the server through this controller, which is searched
+// for exec functions before the game is, so a plain admin is stopped here. Typing the command
+// without "admin" reaches the same check through the RPC.
+exec function AddBots(int Num) {
+	S_MustModAddBots(Num, 0);
+}
+
+exec function AddBlueBots(int Num) {
+	S_MustModAddBots(Num, 1);
+}
+
+exec function AddRedBots(int Num) {
+	S_MustModAddBots(Num, 2);
+}
+
+exec function AddDummies(int Num) {
+	S_MustModAddBots(Num, 3);
+}
+
+reliable server function S_MustModAddBots(int Num, byte Kind) {
+	if (!IsOverAdmin()) {
+		ClientDisplayConsoleMessage("Only an overadmin can add bots.");
+		return;
+	}
+	switch (Kind) {
+		case 0: AOCGame(WorldInfo.Game).AddBots(Num); break;
+		case 1: AOCGame(WorldInfo.Game).AddBlueBots(Num); break;
+		case 2: AOCGame(WorldInfo.Game).AddRedBots(Num); break;
+		case 3: AOCGame(WorldInfo.Game).AddDummies(Num); break;
+	}
+}
+
+// MUSTMOD: game speed is overadmin-only. aoc_slomo (AOCPlayerController) checks plain admin;
+// "slomo" is caught here so "admin slomo" cannot reach the engine's version.
+reliable server function s_aoc_slomo(float f) {
+	if (!IsOverAdmin()) {
+		ClientDisplayConsoleMessage("Only an overadmin can change the game speed.");
+		return;
+	}
+	WorldInfo.Game.SetGameSpeed(f);
+}
+
+exec function Slomo(float f) {
+	s_aoc_slomo(f);
+}
+
+// MUSTMOD: setname for everyone (AOCPlayerController limits it to admins). Non-admins may not
+// take another player's name and are limited to one rename per few seconds. A ranked Elo tag
+// cannot be typed in, and a real one is kept across the rename.
+reliable server function ServerChangeName(coerce string S) {
+	local string CurrentName, Tag, NewName;
+	local PlayerReplicationInfo PRI;
+
+	if (S == "" || PlayerReplicationInfo == none)
+		return;
+
+	if (!IsAdmin()) {
+		if (WorldInfo.TimeSeconds < fNextSetNameTime) {
+			ClientDisplayConsoleMessage("Wait a few seconds before changing your name again.");
+			return;
+		}
+	}
+
+	NewName = class'MustModRanked'.static.StripEloTag(S);
+	if (NewName == "")
+		return;
+
+	if (!IsAdmin()) {
+		foreach WorldInfo.GRI.PRIArray(PRI) {
+			if (PRI != PlayerReplicationInfo && PRI.PlayerName ~= NewName) {
+				ClientDisplayConsoleMessage("Another player already has that name.");
+				return;
+			}
+		}
+		fNextSetNameTime = WorldInfo.TimeSeconds + 5.0;
+	}
+
+	CurrentName = PlayerReplicationInfo.PlayerName;
+	Tag = Left(CurrentName, Len(CurrentName) - Len(class'MustModRanked'.static.StripEloTag(CurrentName)));
+	WorldInfo.Game.ChangeName(self, Tag $ NewName, true);
+}
+
 reliable server function S_AdminBroadcastMessage(string Message, optional bool bShowName=true) {
 	local AOCPlayerController PC;
 	foreach WorldInfo.AllControllers(class'AOCPlayerController', PC) {
@@ -546,11 +678,29 @@ exec function UnPause() {
 }
 
 reliable server function S_StartUnpauseCountdown() {
+	local `{GAMEMODE}PlayerController PC;
+
 	if (!IsAdmin())
 		return;
 	if (!bIsPaused) {
-		ClientDisplayConsoleMessage("The game is not currently paused.");
-		return;
+		if (WorldInfo.Pauser == none) {
+			ClientDisplayConsoleMessage("The game is not currently paused.");
+			return;
+		}
+		// MUSTMOD: an overadmin may clear a pause someone else set (another admin, or RCON).
+		// Not a ranked leaver pause: that one belongs to MustModRanked, which would be left
+		// waiting on a pause that is gone. RankedAbandon / RankedExtend handle it.
+		if (!IsOverAdmin()) {
+			ClientDisplayConsoleMessage("Only the admin who paused the game, or an overadmin, can unpause it.");
+			return;
+		}
+		if (MustModLTS(WorldInfo.Game) != none && MustModLTS(WorldInfo.Game).Ranked != none
+			&& MustModLTS(WorldInfo.Game).Ranked.IsLeaverPaused()) {
+			ClientDisplayConsoleMessage("This is a ranked leaver pause. Use 'admin RankedAbandon' or wait for the timer.");
+			return;
+		}
+		foreach WorldInfo.AllControllers(class'`{GAMEMODE}PlayerController', PC)
+			PC.bIsPaused = false;
 	}
 	UnpauseCountdownTime = Default.UnpauseCountdownTime;
 	S_AdminBroadcastMessage("Unpausing in...", false);
@@ -579,21 +729,26 @@ exec function AdminBroadcastMessage(String Message) {
 	S_AdminBroadcastMessage(Message);
 }
 
+// MUSTMOD: "admin coinflip" (or "coinflip" / "AdminCoinFlip" from a logged-in admin). Flipped
+// and announced on the server, so every player sees the same result.
+exec function CoinFlip() {
+	S_CoinFlip();
+}
+
 exec function AdminCoinFlip() {
-	local int Coin;
+	S_CoinFlip();
+}
+
+reliable server function S_CoinFlip() {
 	local string Result;
 	local AOCPlayerController PC;
 
-	if (!PlayerReplicationInfo.bAdmin) {
+	if (!IsAdmin()) {
 		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
 		return;
 	}
 
-	Coin = Rand(2);
-	if (Coin == 0)
-		Result = "Heads";
-	else
-		Result = "Tails";
+	Result = Rand(2) == 0 ? "Heads" : "Tails";
 
 	foreach WorldInfo.AllControllers(class'AOCPlayerController', PC) {
 		PC.ReceiveChatMessage(AOCPRI(PlayerReplicationInfo).GetHumanReadableName()@"flipped a coin:"@Result, EFAC_ALL, false, true, "#00FF00");
@@ -625,6 +780,106 @@ exec function AdminCancelVote() {
 	}
 	S_AdminBroadcastMessage("AdminCancelVote");
 	super.AdminCancelVote();
+}
+
+// MUSTMOD: timer set by MustModGame.GenericPlayerInitialization, once per player per map.
+function MustModShowRankedHint() {
+	ReceiveChatMessage("Type !rankedhelp to see ranked commands.", EFAC_ALL, false, true, class'MustModRanked'.const.CHAT_COLOUR, false);
+}
+
+// MUSTMOD: ranked console commands. Ranked only exists on LTS (MustModLTS spawns it), so
+// every other mode just answers with a message.
+exec function VoteRanked() {
+	ServerVoteRanked();
+}
+
+reliable server function ServerVoteRanked() {
+	if (MustModLTS(WorldInfo.Game) == none) {
+		ClientDisplayConsoleMessage("Ranked mode is only available on LTS maps.");
+		return;
+	}
+	MustModLTS(WorldInfo.Game).InitiateVoteRanked(self, true);
+}
+
+exec function VoteUnranked() {
+	ServerVoteUnranked();
+}
+
+reliable server function ServerVoteUnranked() {
+	if (MustModLTS(WorldInfo.Game) == none) {
+		ClientDisplayConsoleMessage("Ranked mode is only available on LTS maps.");
+		return;
+	}
+	MustModLTS(WorldInfo.Game).InitiateVoteRanked(self, false);
+}
+
+exec function AdminStartMatch() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerAdminStartMatch();
+}
+
+// Ranked: skip the queue countdown; needs an even number of queued players.
+reliable server function ServerAdminStartMatch() {
+	local string Problem;
+
+	if (!PlayerReplicationInfo.bAdmin)
+		return;
+
+	if (MustModLTS(WorldInfo.Game) == none)
+		Problem = "Ranked mode is only available on LTS maps.";
+	else
+		Problem = MustModLTS(WorldInfo.Game).AdminStartRankedMatch();
+
+	if (Problem != "") {
+		ClientDisplayConsoleMessage(Problem);
+		ReceiveChatMessage(Problem, EFAC_ALL, false, true, class'MustModRanked'.const.CHAT_COLOUR, false);
+		return;
+	}
+	S_AdminBroadcastMessage("AdminStartMatch");
+}
+
+exec function AdminTerminateMatch() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerAdminTerminateMatch();
+}
+
+// Ends the live ranked match with no Elo changes for anyone, then restarts the map.
+reliable server function ServerAdminTerminateMatch() {
+	// Checked again here: the exec-side check runs on the client and can be bypassed.
+	if (!PlayerReplicationInfo.bAdmin)
+		return;
+
+	if (MustModLTS(WorldInfo.Game) == none || !MustModLTS(WorldInfo.Game).TerminateRankedMatch()) {
+		ClientDisplayConsoleMessage("There is no ranked match in progress to terminate.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminTerminateMatch");
+}
+
+exec function AdminDisableRat(bool bDisable) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerAdminDisableRat(bDisable);
+}
+
+// Ranked: 1 = no Man-at-Arms during a ranked match (saved), 0 = allowed again.
+reliable server function ServerAdminDisableRat(bool bDisable) {
+	if (!PlayerReplicationInfo.bAdmin)
+		return;
+
+	if (MustModLTS(WorldInfo.Game) == none || !MustModLTS(WorldInfo.Game).SetRatDisabled(bDisable)) {
+		ClientDisplayConsoleMessage("Ranked is only available on LTS maps.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminDisableRat" @ (bDisable ? "1" : "0"));
 }
 
 exec function AdminReadyAll() {
@@ -1341,6 +1596,11 @@ exec function CauseEvent(optional name EventName) {
 // can see which admin changed the map, and to where.
 reliable server function ServerChangeMap(string URL)
 {
+	// MUSTMOD: covers AdminChangeMap and every AdminGoto* shortcut, which all land here. A
+	// live ranked match restarts the map itself when it ends.
+	if (MustModLTS(WorldInfo.Game) != none && MustModLTS(WorldInfo.Game).RankedBlocksMapChange(self))
+		return;
+
 	if (IsAdmin() && AOCGame(WorldInfo.Game).MapExists(URL))
 		S_AdminBroadcastMessage("changed map to "$URL);
 	super.ServerChangeMap(URL);
@@ -1359,6 +1619,9 @@ exec function AdminRestartMap()
 reliable server function S_AdminRestartMap()
 {
 	if (!IsAdmin())
+		return;
+	// MUSTMOD: a live ranked match restarts the map itself when it ends.
+	if (MustModLTS(WorldInfo.Game) != none && MustModLTS(WorldInfo.Game).RankedBlocksMapChange(self))
 		return;
 	S_AdminBroadcastMessage("restarted the map");
 	WorldInfo.ServerTravel("?restart", false);

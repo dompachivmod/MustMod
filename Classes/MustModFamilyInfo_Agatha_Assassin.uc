@@ -36,12 +36,9 @@ DefaultProperties
 	NewPrimaryWeapons(8)=(CWeapon=class'MustModWeapon_HolyWaterSprinkler',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
 	NewPrimaryWeapons(9)=(CWeapon=class'MustModWeapon_QuarterStaff',CorrespondingDuelProp=EDUEL_QStaffUse)
 	NewPrimaryWeapons(10)=(CWeapon=class'MustModWeapon_DualBucklers')
-	NewPrimaryWeapons(11)=(CWeapon=class'MustModWeapon_Firebug')
 
 	NewSecondaryWeapons.empty;
-	NewSecondaryWeapons(0)=(CWeapon=class'MustModWeapon_Saber')
-	NewSecondaryWeapons(1)=(CWeapon=class'MustModWeapon_Cudgel')
-	NewSecondaryWeapons(2)=(CWeapon=class'MustModWeapon_Dagesse')
+	NewSecondaryWeapons(0)=(CWeapon=class'MustModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
 
 	NewTertiaryWeapons.empty;
 	NewTertiaryWeapons(0)=(CWeapon=class'MustModWeapon_ThrowingKnife')

@@ -164,7 +164,7 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_ThrustDagger]
 	 */
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.35
 	TertiaryFeintTime=0.45
 	fParryNegation=21

@@ -20,6 +20,10 @@ var int AllDamageTaken,
 var float AllStaminaConsumed,
           StaminaRegenerated;
 
+// Server-only: team damage dealt this map, for the periodic top-team-damage callout.
+// AOCPlayerController.TeamDamageDealt can't be used: the spawn queue zeroes it on every respawn.
+var int MapTeamDamageDealt;
+
 
 replication
 {
@@ -57,6 +61,7 @@ function PreSeamlessTravelReset()
     Jumps = 0;
     Dodges = 0;
     Chatter = 0;
+    MapTeamDamageDealt = 0;
 }
 
 function CopyProperties(PlayerReplicationInfo PRI)

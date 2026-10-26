@@ -174,7 +174,7 @@ DefaultProperties
 	CurrentGenWeaponType=EWT_2handsword
 	AlternativeMode=none
 
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.3
 	TertiaryFeintTime=0.45
 	ComboFeintTime=0.55

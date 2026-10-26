@@ -108,32 +108,6 @@ const CL = [
 ];
 const LOC = {"Head": 1.25, "Torso": 1.0, "Legs": 0.8};
 const W = {
- "2HFlail": [
-  {
-   "i": 0,
-   "n": "Slash (LMB)",
-   "d": 75,
-   "t": "Blunt"
-  },
-  {
-   "i": 1,
-   "n": "Overhead",
-   "d": 82,
-   "t": "Blunt"
-  },
-  {
-   "i": 2,
-   "n": "Stab",
-   "d": 25,
-   "t": "PierceBlunt"
-  },
-  {
-   "i": 5,
-   "n": "Shove",
-   "d": 5,
-   "t": "Shove"
-  }
- ],
  "Bardiche": [
   {
    "i": 0,
@@ -488,38 +462,6 @@ const W = {
    "t": "Shove"
   }
  ],
- "DoubleBlade": [
-  {
-   "i": 0,
-   "n": "Slash (LMB)",
-   "d": 90,
-   "t": "Swing"
-  },
-  {
-   "i": 1,
-   "n": "Overhead",
-   "d": 100,
-   "t": "Swing"
-  },
-  {
-   "i": 2,
-   "n": "Stab",
-   "d": 60,
-   "t": "Pierce"
-  },
-  {
-   "i": 3,
-   "n": "Special",
-   "d": 100,
-   "t": "Swing"
-  },
-  {
-   "i": 5,
-   "n": "Shove",
-   "d": 5,
-   "t": "Shove"
-  }
- ],
  "DualBucklers": [
   {
    "i": 0,
@@ -570,38 +512,6 @@ const W = {
    "n": "Stab",
    "d": 50,
    "t": "Pierce"
-  },
-  {
-   "i": 5,
-   "n": "Shove",
-   "d": 5,
-   "t": "Shove"
-  }
- ],
- "Firebug": [
-  {
-   "i": 0,
-   "n": "Slash (LMB)",
-   "d": 40,
-   "t": "Blunt"
-  },
-  {
-   "i": 1,
-   "n": "Overhead",
-   "d": 54,
-   "t": "Blunt"
-  },
-  {
-   "i": 2,
-   "n": "Stab",
-   "d": 20,
-   "t": "Blunt"
-  },
-  {
-   "i": 3,
-   "n": "Special",
-   "d": 100,
-   "t": "Blunt"
   },
   {
    "i": 5,
@@ -794,7 +704,7 @@ const W = {
   {
    "i": 0,
    "n": "Slash (LMB)",
-   "d": 65,
+   "d": 70,
    "t": "SwingBlunt"
   },
   {
@@ -1032,7 +942,7 @@ const W = {
   {
    "i": 1,
    "n": "Overhead",
-   "d": 90,
+   "d": 92,
    "t": "Swing"
   },
   {
@@ -1279,32 +1189,6 @@ const W = {
    "i": 1,
    "n": "Overhead",
    "d": 90,
-   "t": "Blunt"
-  },
-  {
-   "i": 2,
-   "n": "Stab",
-   "d": 72,
-   "t": "Pierce"
-  },
-  {
-   "i": 5,
-   "n": "Shove",
-   "d": 5,
-   "t": "Shove"
-  }
- ],
- "PoleAxeBack": [
-  {
-   "i": 0,
-   "n": "Slash (LMB)",
-   "d": 100,
-   "t": "Blunt"
-  },
-  {
-   "i": 1,
-   "n": "Overhead",
-   "d": 100,
    "t": "Blunt"
   },
   {
@@ -1611,7 +1495,7 @@ const W = {
   }
  ]
 };
-const EMPTY = {"2HFlail": ["Special", "Alt"], "Bardiche": ["Alt"], "BastardSword": ["Special", "Alt"], "Bearded": ["Special", "Alt"], "Bill": ["Alt"], "Brandistock": ["Alt"], "BroadDagger": ["Special", "Alt"], "Broadsword": ["Special", "Alt"], "Claymore": ["Alt"], "Cudgel": ["Alt"], "Dagesse": ["Alt"], "Dane": ["Alt"], "DoubleAxe": ["Special", "Alt"], "DoubleBlade": ["Alt"], "DualBucklers": ["Alt"], "Falchion": ["Special", "Alt"], "Firebug": ["Alt"], "Flail": ["Special", "Alt"], "Fork": ["Alt"], "GrandHammer": ["Special", "Alt"], "GrandLance": [], "GrandMace": ["Special", "Alt"], "Greatsword": ["Alt"], "Halberd": [], "Hatchet": [], "HeavyJavelin": ["Special", "Alt"], "HolyWaterSprinkler": ["Special", "Alt"], "HuntingKnife": ["Special", "Alt"], "Javelin": ["Special", "Alt"], "Kanabo": ["Special", "Alt"], "Katana": ["Special", "Alt"], "Longsword": ["Special", "Alt"], "Longsword1H": ["Special", "Alt"], "Mace": ["Special", "Alt"], "Maul": [], "Messer": ["Special", "Alt"], "Messer1H": ["Special", "Alt"], "MorningStar": ["Special", "Alt"], "Nodachi": ["Special", "Alt"], "NorseSword": ["Special", "Alt"], "PoleAxe": ["Special", "Alt"], "PoleAxeBack": ["Special", "Alt"], "PoleHammer": ["Alt"], "QuarterStaff": ["Special", "Alt"], "Saber": ["Alt"], "ShortSpear": ["Special", "Alt"], "Spear": ["Alt"], "SwordOfWar": ["Special", "Alt"], "SwordOfWar1H": ["Special", "Alt"], "WarAxe": ["Alt"], "WarHammer": ["Special", "Alt"], "Zweihander": ["Alt"]};
+const EMPTY = {"Bardiche": ["Alt"], "BastardSword": ["Special", "Alt"], "Bearded": ["Special", "Alt"], "Bill": ["Alt"], "Brandistock": ["Alt"], "BroadDagger": ["Special", "Alt"], "Broadsword": ["Special", "Alt"], "Claymore": ["Alt"], "Cudgel": ["Alt"], "Dagesse": ["Alt"], "Dane": ["Alt"], "DoubleAxe": ["Special", "Alt"], "DualBucklers": ["Alt"], "Falchion": ["Special", "Alt"], "Flail": ["Special", "Alt"], "Fork": ["Alt"], "GrandHammer": ["Special", "Alt"], "GrandLance": [], "GrandMace": ["Special", "Alt"], "Greatsword": ["Alt"], "Halberd": [], "Hatchet": [], "HeavyJavelin": ["Special", "Alt"], "HolyWaterSprinkler": ["Special", "Alt"], "HuntingKnife": ["Special", "Alt"], "Javelin": ["Special", "Alt"], "Kanabo": ["Special", "Alt"], "Katana": ["Special", "Alt"], "Longsword": ["Special", "Alt"], "Longsword1H": ["Special", "Alt"], "Mace": ["Special", "Alt"], "Maul": [], "Messer": ["Special", "Alt"], "Messer1H": ["Special", "Alt"], "MorningStar": ["Special", "Alt"], "Nodachi": ["Special", "Alt"], "NorseSword": ["Special", "Alt"], "PoleAxe": ["Special", "Alt"], "PoleHammer": ["Alt"], "QuarterStaff": ["Special", "Alt"], "Saber": ["Alt"], "ShortSpear": ["Special", "Alt"], "Spear": ["Alt"], "SwordOfWar": ["Special", "Alt"], "SwordOfWar1H": ["Special", "Alt"], "WarAxe": ["Alt"], "WarHammer": ["Special", "Alt"], "Zweihander": ["Alt"]};
 const ATC = {Swing:"rgba(248,81,73,0.78)",Pierce:"rgba(63,185,80,0.78)",Blunt:"rgba(88,166,255,0.78)",SwingBlunt:"rgba(188,140,255,0.78)",PierceBlunt:"rgba(255,166,87,0.78)",Shove:"rgba(139,148,158,0.78)",Generic:"rgba(139,148,158,0.78)"};
 const LOCATIONS = ["Head","Torso","Legs"];
 const wnames = Object.keys(W).sort();

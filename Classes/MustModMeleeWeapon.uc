@@ -14,6 +14,15 @@ var float fFlinchStateStartTime;
 var float fHitRegisteredTime;  // When the hit was registered (for ping normalization)
 var int MissCount;  // Track consecutive misses in combo for miss penalty
 
+// Miss stamina cost, flat for every weapon (no two-hander surcharge): the first miss of the
+// two-miss lockout costs fFirstMissStaminaCost, the second (the one that locks you out)
+// fSecondMissStaminaCost. Release.EndState picks the cost once per swing, before MissCount
+// moves, and GetStaminaLossForMiss() returns it, so every caller (exhausted-miss check, the
+// vanilla S_ConsumeStamina in super.EndState) charges the same amount.
+var float fFirstMissStaminaCost;
+var float fSecondMissStaminaCost;
+var float fMissStaminaCostThisSwing;
+
 // Parry buffer system - allows queuing parry input during recovery/flinch
 var float fLastParryInputTime;  // Game time when player last pressed parry
 var float fParryBufferWindow;   // How long to remember parry input (default 125ms)
@@ -27,6 +36,15 @@ var bool bAcceptLateParrySuccessInRecovery; // True only for ParryRelease -> Rec
 // Minimum combo transition time for ping normalization
 var float fMinComboTransitionTime;  // Minimum time before combo can release (100ms floor)
 var float fComboTransitionStartTime;  // When transition state began
+
+// Exhausted-miss penalty: whiffing while too low on stamina to pay for the whiff
+// locks you in Recovery for a flat fExhaustedMissRecovery instead of the weapon's
+// own recovery length. Set in Release's EndState (before the stamina is spent) and
+// consumed by Recovery's PlayStateAnimation -- and by WorldDeflect's, so that clanging
+// the ground on an empty bar is punished the same as whiffing into air. Cleared when
+// Deflect ends so a clang's flag cannot leak into a later parry recovery.
+var bool bExhaustedMiss;
+var float fExhaustedMissRecovery;  // Flat recovery length, in seconds
 
 // Returns true when the weapon is in a riposte flow and should ignore flinch.
 simulated function bool IsRiposteFlinchProtected()
@@ -108,15 +126,11 @@ simulated function BeginFire(byte FireModeNum)
 	super.BeginFire(FireModeNum);
 }
 
-// simulated function float GetStaminaLossForMiss()
-// {
-//     local float StaminaLoss;
-//     if (!bTwoHander)
-//         StaminaLoss = 5;
-//     else
-//         StaminaLoss = 7;
-//     return StaminaLoss;
-// }
+/** Stamina for the miss being charged right now; see fMissStaminaCostThisSwing. */
+simulated function float GetStaminaLossForMiss()
+{
+	return fMissStaminaCostThisSwing;
+}
 
 /** Server RPC to validate feint stamina - prevents phantom feint at low stamina */
 // reliable server function ServerValidateFeint(int StaminaCost)
@@ -416,12 +430,51 @@ simulated state Recovery
 		}
 	}
 
+	/** Recovery length override for an exhausted miss.
+	 *
+	 *  A whiff we could not pay the stamina for holds us in Recovery for a flat
+	 *  fExhaustedMissRecovery instead of the weapon's own recovery length, so a
+	 *  gassed miss is punished the same whether it came off a dagger or a maul.
+	 *
+	 *  Stretching this field is how vanilla already scales recovery on a miss --
+	 *  x1.25 for a combo whiff (AOCMeleeWeapon) and x1.5 for a shove/sprint whiff
+	 *  (AOCWeapon). fAnimationLength drives the OnAttackAnimEnd timer that ends the
+	 *  state, and it replicates as a percentage of the real clip, so the animation
+	 *  plays slowed to fill the window rather than freezing on a pose.
+	 */
+	simulated function PlayStateAnimation()
+	{
+		local AnimationInfo Info;
+
+		if (!bExhaustedMiss || fExhaustedMissRecovery <= 0.0f
+			|| CurrentFireMode >= RecoveryAnimations.Length)
+		{
+			super.PlayStateAnimation();
+			return;
+		}
+
+		// Parry wins over recovery, same as the parent does.
+		if (CanGotoParry())
+			return;
+
+		Info = RecoveryAnimations[CurrentFireMode];
+		Info.fAnimationLength = fExhaustedMissRecovery;
+		Info.bForce = true;
+		Info.bForceFullBody = CurrentFireMode == Attack_Sprint;
+
+		AOCOwner.ReplicateCompressedAnimation(Info, EWST_Recovery, CurrentFireMode);
+		LastAnimInfo = Info;
+
+		StartManualQueueTimer(fExhaustedMissRecovery);
+	}
+
 	simulated event EndState(Name NextStateName)
 	{
 		bAcceptLateParrySuccessInRecovery = false;
+		bExhaustedMiss = false;
 		super.EndState(NextStateName);
 	}
-	
+
 }
 
 simulated state Active
@@ -542,6 +595,78 @@ simulated state Deflect
 	{
 		super.BeginState(PreviousStateName);
 			// TryActivateBufferedParry();
+	}
+
+	/** Deflect is a terminal stop for the swing that set bExhaustedMiss, so drop the flag
+	 *  here. Without this it survives into whatever state comes next, and a parry -- which
+	 *  never passes back through Release's EndState to recompute it -- would inherit the
+	 *  flat recovery meant for the clang. */
+	simulated event EndState(Name NextStateName)
+	{
+		bExhaustedMiss = false;
+		super.EndState(NextStateName);
+	}
+}
+
+/** MUSTMOD: WorldDeflect is the ground/wall clang.
+ *
+ *  Release's EndState already flags bExhaustedMiss for a clang -- the whiff cost more
+ *  stamina than we had -- but the flat recovery lived only in Recovery's
+ *  PlayStateAnimation, and a clang routes Release -> WorldDeflect -> Active (AOCWeapon's
+ *  Deflect.OnStateAnimationEnd) without ever entering Recovery. The flag was written and
+ *  discarded, so hitting the dirt on an empty bar was cheaper than hitting air. Stretch
+ *  the deflect clip the same way Recovery stretches its own.
+ *
+ *  Declared without an `extends` clause: AOCMeleeWeapon already declares
+ *  `WorldDeflect extends Deflect`, and UnrealScript rejects restating the parent on an
+ *  override ("'Extends' not allowed here: state 'WorldDeflect' overrides version in parent
+ *  class"). The inheritance chain carries over from the parent declaration on its own.
+ *
+ *  Deliberately not on plain Deflect. Being parried also lands there, and although
+ *  bExhaustedMiss is false for it today -- MustModPawn.uci sets bHitPawn = true on any
+ *  registered parry -- punishing parried swings is not the intent and should not ride on
+ *  that coupling holding.
+ */
+simulated state WorldDeflect
+{
+	simulated function PlayStateAnimation()
+	{
+		local AnimationInfo Info;
+
+		if (!bExhaustedMiss || fExhaustedMissRecovery <= 0.0f || StateAnimations.Length == 0)
+		{
+			super.PlayStateAnimation();
+			return;
+		}
+
+		Info = StateAnimations[0];
+		Info.fAnimationLength = fExhaustedMissRecovery;
+		Info.bForce = true;
+
+		// Same sprint-attack movement lock the parent applies.
+		if (CurrentFireMode == Attack_Sprint)
+			Info.fModifiedMovement = 0.0f;
+
+		AOCOwner.ReplicateCompressedAnimation(Info, EWST_State, 0);
+		LastAnimInfo = Info;
+
+		StartManualQueueTimer(fExhaustedMissRecovery);
+	}
+
+	/** Vanilla WorldDeflect drops the parry branch that plain Deflect has -- you cannot
+	 *  parry out of a world clang, only queue an attack. Preserved. */
+	simulated function BeginFire(byte FireModeNum)
+	{
+		if (bManualAllowQueue)
+			AttackQueue = EAttack(FireModeNum);
+	}
+
+	/** Clear the flag here too rather than trusting Deflect's EndState to be reached
+	 *  through the inherited chain. Clearing twice is harmless. */
+	simulated event EndState(Name NextStateName)
+	{
+		bExhaustedMiss = false;
+		super.EndState(NextStateName);
 	}
 }
 
@@ -925,7 +1050,7 @@ simulated state Release
 		// debug readout (Set_bShowHitTime -> LogHitTime in AttackOtherPawn). Authority only.
 		if (Role == ROLE_Authority && AOCOwner != none && MustModPawn(AOCOwner) != none)
 			MustModPawn(AOCOwner).Set_fLastReleaseStartTime(WorldInfo.TimeSeconds);
-		
+
 		// Delay damage before traces can deal hits.
 		// This gives a defending parry time to serialize on dedicated servers.
 		if (MustModWeaponAttachment(AOCWepAttachment) != none)
@@ -959,12 +1084,31 @@ simulated state Release
 
 		CurrentStamina = AOCOwner.Stamina;
 
+		// Second miss of the lockout costs more. Chosen before MissCount++ below. Only the
+		// owning client counts misses, so the server prices a remote player's miss as a
+		// first miss; it is the client's S_ConsumeStamina that actually charges it.
+		fMissStaminaCostThisSwing = (MissCount >= 1) ? fSecondMissStaminaCost : fFirstMissStaminaCost;
+
+		// Exhausted miss: did this whiff cost more stamina than we had to give?
+		// Evaluated here, before super.EndState() spends it -- afterwards the pool is
+		// already docked (and floored at 0), which would flag anyone who merely ended
+		// the swing below the cost. Deliberately outside the IsLocallyControlled gate
+		// below so the server reaches the same verdict for remote players.
+		bExhaustedMiss = !bHitPawn
+			&& CurrentFireMode != Attack_Parry
+			&& CurrentFireMode != Attack_Shove
+			&& NextStateName != 'Flinch'
+			&& (AOCWepAttachment == none || !AOCWepAttachment.bHitDestructibleObject)
+			&& AOCOwner != none
+			&& !AOCOwner.bInfiniteStamina
+			&& CurrentStamina < GetStaminaLossForMiss();
+
 		if (AOCOwner.IsLocallyControlled() || AOCOwner.bIsBot)
 		{
 			if (bHitPawn)
 			{
 				//Inform Pawn that the attack was successful
-				MissCount = 0;
+				// A hit does NOT reset MissCount: miss, hit, miss still triggers the lockout.
 				if(CurrentFireMode >= Attack_Slash && CurrentFireMode <= Attack_Sprint)
 				{
 					AOCOwner.OnActionSucceeded(EPlayerAction(CurrentFireMode + EACT_AttackSlash));
@@ -1035,7 +1179,7 @@ simulated state Release
 		}
 
 		ClearTimer('ActivateDamageTracing');
-		
+
 		// Ensure damage is re-enabled for next attack
 		if (MustModWeaponAttachment(AOCWepAttachment) != none)
 			MustModWeaponAttachment(AOCWepAttachment).bCanDoDamage = true;
@@ -1143,6 +1287,21 @@ DefaultProperties
 	// Minimum combo transition time - 100ms floor to normalize low-ping advantage
 	fMinComboTransitionTime = 0.100;
 	fComboTransitionStartTime = 0;
+
+	// Exhausted miss - flat recovery when a whiff costs more stamina than we had.
+	// Longest ordinary melee recovery is 0.90s (Zweihander/Maul/PoleAxe), so this is
+	// still comfortably above the worst case. 1.30s is the floor that keeps the
+	// punish real against the fastest weapons: a Halberd that parries 200ms into a
+	// shortsword overhead, whiffs the parry and then stabs commits 2.475s (0.2 react
+	// + 0.5 raise + 0.5 window + 0.5 parry recovery + 0.775 stab windup), while the
+	// shortsword needs 0.85s to finish its whiff plus a 0.40s slash windup. Anything
+	// under ~1.23s and the exhausted player wins the trade anyway.
+	bExhaustedMiss = false;
+	fExhaustedMissRecovery = 1.300;
+
+	fFirstMissStaminaCost = 15.0
+	fSecondMissStaminaCost = 25.0
+	fMissStaminaCostThisSwing = 15.0
 	
 	// Tighter feint windows to reduce low-ping feint abuse
 	// EndFeintWindowTime = 0.10;  // Reduced from vanilla 0.15

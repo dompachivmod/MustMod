@@ -45,14 +45,6 @@ simulated state ParryRelease
 	}
 }
 
-simulated function float GetStaminaLossForMiss()
-{
-	// For missed swings, QuarterStaff should drain as much as one-hander
-	local float StaminaLoss;
-	StaminaLoss = AOCOwner.PawnFamily.iMissMeleeStrikePenalty + AOCOwner.PawnFamily.iMissMeleeStrikePenaltyBonus;
-	return StaminaLoss;
-}
-
 defaultproperties
 {
 	Begin Object class=AnimNodeSequence Name=MeshSequenceA
@@ -187,7 +179,7 @@ defaultproperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_QuarterStaff]
 	 */
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.32
 	TertiaryFeintTime=0.46
 	fParryNegation=27

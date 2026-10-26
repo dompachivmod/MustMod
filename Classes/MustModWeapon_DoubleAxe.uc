@@ -218,7 +218,7 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_DoubleAxe]
 	 */
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.2
 	TertiaryFeintTime=0.4
 	fParryNegation=25

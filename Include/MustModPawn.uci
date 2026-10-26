@@ -34,7 +34,6 @@ var float fRecentHitTTL;               // how long a taken hit stays eligible to
 var float fClockOffsetAlpha;           // EMA weight for new clock-offset samples
 var bool  bEnableTradeCancellation;    // master toggle: whether hit-trade cancellation is active
 
-var AOCPawn StoredFirebugHitActor;     // cached victim for delayed Firebug ignition timer
 
 /** Adjust mesh scale for Man at Arms class to make them smaller */
 // simulated function CharacterAssetStoreAllAssetsLoaded()
@@ -101,19 +100,6 @@ simulated function WeaponAttachmentChanged()
 
 	if (CurrentWeaponAttachment == none)
 		return;
-
-	// Force PoleAxeBack to use its own mesh on ALL clients.
-	// WeaponEquipping::BeginState runs only on authority/local clients;
-	// remote clients get the attachment via replication and need this hook
-	// to apply the correct skeletal mesh.
-	if (CurrentWeaponAttachment.Class == class'MustModWeaponAttachment_PoleAxeBack')
-	{
-		CurrentWeaponAttachment.Mesh.SetSkeletalMesh(
-			SkeletalMesh'SlumpWep_PaxeBack.SlumpWep_PaxeBack');
-		if (CurrentWeaponAttachment.OverlayMesh != none)
-			CurrentWeaponAttachment.OverlayMesh.SetSkeletalMesh(
-				SkeletalMesh'SlumpWep_PaxeBack.SlumpWep_PaxeBack');
-	}
 
 	// MUSTMOD: Fix heater shield orientation for javelin — javelin animations
 	// hold the arm differently, causing the heater to face skyward like a saucer.
@@ -224,6 +210,33 @@ simulated function bool ShouldActivateFlinch(HitInfo Info, class<AOCWeapon> Used
 	return false;
 }
 
+// MUSTMOD: AOCPawn.ConsumeStamina with a 3.0s regen delay after spending stamina (vanilla 1.5s).
+// Running dry still waits 3.0s (AOCPawn.Tick), so both delays are now the same.
+simulated function bool ConsumeStamina(float Amount)
+{
+	if (bInfiniteStamina)
+		return true;
+
+	Stamina -= Amount;
+
+	if (Amount > 0.f)
+	{
+		bRegenStamina = false;
+		SetTimer(3.0f, false, 'ResumeStaminaRegen');
+	}
+
+	ReplicatedStamina = Clamp(Stamina/MaxStamina * 255, 0, 255);
+
+	if (Stamina < 0.0f)
+	{
+		Stamina = 0.0f;
+		ReplicatedStamina = 0;
+		return false;
+	}
+
+	return true;
+}
+
 function RegenHealth() {
 	// No need to run this on the server
 	if(Role != ROLE_Authority)
@@ -302,10 +315,40 @@ simulated event Tick(float DeltaTime)
 			AOCPlayerController(Controller).PlayerInput.aForward = 1.0;
 	}
 
-	// Override the PlayLowStaminaLoop call with fixed threshold
-	// Original used MaxStamina * 0.2f which is correct, but we hardcode to 15 for consistency
-	// This ensures all classes pant at the same absolute stamina level (15 or below)
-	PlayLowStaminaLoop(Stamina <= 15.0f && Health > 0.0f);
+	// Drive the panting loop from our own rule. The PlayLowStaminaLoop override below
+	// also filters AOCPawn's own Tick call, so this is the only threshold that decides.
+	PlayLowStaminaLoop(MustModShouldPant());
+}
+
+
+/** MUSTMOD: the single rule for the exhausted-breathing loop.
+ *
+ *  Panting is meant to signal "you cannot afford to feint", so the threshold is the cheapest
+ *  feint in the game: 16 stamina (every primary/secondary weapon is 16; HolyWaterSprinkler
+ *  and Messer are 18, HuntingKnife 35). At 15 or less no weapon can feint, so that is where
+ *  the panting starts.
+ *  Absolute rather than a fraction of MaxStamina, so it is identical for every class and
+ *  every weapon.
+ */
+simulated function bool MustModShouldPant()
+{
+	return Stamina <= 15.0f && Health > 0.0f;
+}
+
+/** MUSTMOD: force every caller through MustModShouldPant, including AOCPawn's own Tick.
+ *
+ *  Vanilla's Tick asks for the loop below MaxStamina * 0.2f, i.e. below 20, and it runs via
+ *  our super.Tick() call before our own line above. bPlayingExhaustLoop is edge-triggered,
+ *  so without this filter anything between the two thresholds flipped the flag on (vanilla)
+ *  and straight back off (us) inside a single frame -- a 0.5s FadeIn plus a 0.5s FadeOut,
+ *  every frame, for the whole 15-to-20 band. Gating here means the loop can only ever be
+ *  started by our own rule, whoever asks.
+ *
+ *  A caller passing false still stops the loop, so AOCPawn's stop-on-death call is intact.
+ */
+simulated function PlayLowStaminaLoop(bool bPlay)
+{
+	super.PlayLowStaminaLoop(bPlay && MustModShouldPant());
 }
 
 
@@ -592,13 +635,11 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 
 }
 
+// MUSTMOD: dodge costs the family's iDodgeCost for every weapon. The Hatchet used to
+// return a hardcoded 22 here, which the two "extra stamina" call sites turned into a 3
+// stamina refund against the 25 the family charged; both are gone, so the cost is flat.
+// Kept as a function because StartDodge uses it for the affordability check.
 function int CalcDodgeCost() {
-	// Check if player is holding a Hatchet - use custom dodge cost
-	if (MustModWeapon_Hatchet(Weapon) != none) {
-		return 22;
-	}
-	
-	// Default behavior for other weapons - no extra cost for parry dodge
 	return PawnFamily.iDodgeCost;
 }
 
@@ -689,9 +730,6 @@ reliable server function ServerStartDodge(byte direction, byte WeaponId) {
 
 	// Start the dodge
 	DodgeSM.StartDodgeSM(direction, WeaponId);
-
-	// Consume extra stamina
-	ConsumeStamina(CalcDodgeCost() - PawnFamily.iDodgeCost);
 }
 
 function bool StartDodge(int direction)
@@ -739,9 +777,6 @@ function bool StartDodge(int direction)
 		if (!(WorldInfo.NetMode == NM_DedicatedServer || WorldInfo.NetMode == NM_ListenServer))
 		{
 			DodgeSM.StartDodgeSM(direction, WeaponId);
-
-			// Consume extra stamina
-			ConsumeStamina(CalcDodgeCost() - PawnFamily.iDodgeCost);
 		}
 
 		if (WorldInfo.NetMode != NM_Standalone)
@@ -1735,6 +1770,12 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 				// TeamDamageDealt is repurposed for successful parry counting (scoreboard "Prys" column)
 				// AOCPlayerController.TeamDamageDealt still tracks TDmg for the penalty system
 				AOCPlayerController(Controller).TeamDamageDealt += ActualDamage;
+`if(`isdefined(GAMEMODE))
+				// Whole-map total for the top-team-damage callout (MustModGame.uci). Guarded: the
+				// base MustModPawn class includes this file with no game mode defined.
+				if (`{GAMEMODE}PRI(PRI) != none)
+					`{GAMEMODE}PRI(PRI).MapTeamDamageDealt += ActualDamage;
+`endif
 			}
 
 		// Force an update
@@ -1831,16 +1872,6 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 		Info.HitActor.HandlePawnGetHit();
 	}
 
-	// Firebug ignition — delayed so the blunt impact sound plays cleanly before
-	// the fire scream SFX kicks in. Without the delay the scream drowns out the
-	// weapon impact cue since both fire in the same frame on the same channel.
-	if (MustModWeapon_Firebug(Weapon) != none && Info.HitActor != none
-		&& ActualDamage > 0.0f && !bParry && !bSameTeam && !Info.HitActor.bIsBurning
-		&& Info.HitActor.IsAliveAndWell())
-	{
-		SetTimer(0.25f, false, 'DelayedFirebugIgnite');
-		StoredFirebugHitActor = Info.HitActor;
-	}
 
 	// MUSTMOD: Remember this hit on the victim so, if their counter-swing is still in flight, the
 	// server can see it landed clearly later and drop it (trade priority). Real enemy melee hits
@@ -2084,17 +2115,6 @@ function ProcessPendingHits()
 	}
 }
 
-// MUSTMOD: Delayed Firebug ignition — lets the blunt impact sound finish before the fire
-// scream plays, so both audio cues are audible instead of the scream drowning out the impact.
-function DelayedFirebugIgnite()
-{
-	if (StoredFirebugHitActor != none && StoredFirebugHitActor.IsAliveAndWell()
-		&& !StoredFirebugHitActor.bIsBurning)
-	{
-		StoredFirebugHitActor.SetPawnOnFire(none, Controller, self, class'MustModDmgType_TorchBurn');
-	}
-	StoredFirebugHitActor = none;
-}
 
 // MUSTMOD: A parry landed while swings were still held on us — resolve every one as a parry
 // BEFORE any hit feedback plays (decide-once). DetectSuccessfulParry still rejects illegal
@@ -2143,8 +2163,6 @@ event TakeDamage(int Damage, Controller InstigatedBy, vector HitLocation, vector
 	if (DamageType == class'AOCDmgType_BallistaBolt' && AOCProjectile(DamageCauser) != none)
 		return;
 
-	// Firebug ignition moved to end of AttackOtherPawn (after HandlePawnGetHit)
-	// so that the blunt impact sound plays before the fire sound.
 
 	super.TakeDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType, HitInfo, DamageCauser);
 }

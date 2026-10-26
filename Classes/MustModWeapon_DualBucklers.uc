@@ -262,7 +262,7 @@ DefaultProperties
 
 	CurrentGenWeaponType=EWT_Fists
 
-	iFeintStaminaCost=15
+	iFeintStaminaCost=16
 	FeintTime=0.2
 	TertiaryFeintTime=0.4
 	fParryNegation=100

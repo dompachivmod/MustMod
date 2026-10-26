@@ -16,20 +16,11 @@ DefaultProperties
 	NewPrimaryWeapons(7)=(CWeapon=class'MustModWeapon_SwordOfWar',CForceTertiary=(class'MustModWeapon_HuntingKnife', class'MustModWeapon_Kite_Agatha', class'MustModWeapon_TowerShield_Agatha'))
 	NewPrimaryWeapons(8)=(CWeapon=class'MustModWeapon_Messer',CForceTertiary=(class'MustModWeapon_HuntingKnife', class'MustModWeapon_Kite_Agatha', class'MustModWeapon_TowerShield_Agatha'))
 	NewPrimaryWeapons(9)=(CWeapon=class'MustModWeapon_Katana',CForceTertiary=(class'MustModWeapon_HuntingKnife', class'MustModWeapon_Kite_Agatha', class'MustModWeapon_TowerShield_Agatha'))
-	NewPrimaryWeapons(10)=(CWeapon=class'MustModWeapon_HFlail',CForceTertiary=(class'MustModWeapon_Kite_Agatha', class'MustModWeapon_TowerShield_Agatha'))
-	NewPrimaryWeapons(11)=(CWeapon=class'MustModWeapon_2HFlail',CForceTertiary=(class'MustModWeapon_HuntingKnife', class'MustModWeapon_Kite_Agatha', class'MustModWeapon_TowerShield_Agatha'))
 	
 
 
 	NewSecondaryWeapons.empty;
-	NewSecondaryWeapons(0)=(CWeapon=class'MustModWeapon_Mace')
-	NewSecondaryWeapons(1)=(CWeapon=class'MustModWeapon_MorningStar')
-	NewSecondaryWeapons(2)=(CWeapon=class'MustModWeapon_HolyWaterSprinkler')
-	NewSecondaryWeapons(3)=(CWeapon=class'MustModWeapon_Saber')
-	NewSecondaryWeapons(4)=(CWeapon=class'MustModWeapon_Falchion')
-	NewSecondaryWeapons(5)=(CWeapon=class'MustModWeapon_WarAxe')
-	NewSecondaryWeapons(6)=(CWeapon=class'MustModWeapon_Dane')
-	NewSecondaryWeapons(7)=(CWeapon=class'MustModWeapon_Cudgel')
+	NewSecondaryWeapons(0)=(CWeapon=class'MustModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
 	
 	
 	NewTertiaryWeapons.empty;

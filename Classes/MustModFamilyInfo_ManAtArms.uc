@@ -34,7 +34,6 @@ DefaultProperties
 	NewPrimaryWeapons(7)=(CWeapon=class'AOCWeapon_MorningStar',CheckLimitExpGroup=EEXP_1HBLUNT,UnlockExpLevel=25.f,CorrespondingDuelProp=EDUEL_MorningStarUse)
 	NewPrimaryWeapons(8)=(CWeapon=class'AOCWeapon_HolyWaterSprinkler',CheckLimitExpGroup=EEXP_1HBLUNT,UnlockExpLevel=100.f,CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
 	NewPrimaryWeapons(9)=(CWeapon=class'AOCWeapon_QuarterStaff',CheckLimitExpGroup=EEXP_STAFF,UnlockExpLevel=0.f,CorrespondingDuelProp=EDUEL_QStaffUse)
-	NewPrimaryWeapons(10)=(CWeapon=class'MustModWeapon_HFlail')
 	NewSecondaryWeapons(0)=(CWeapon=class'AOCWeapon_BroadDagger',CheckLimitExpGroup=EEXP_DAGGER,UnlockExpLevel=0.f,CorrespondingDuelProp=EDUEL_BroadDaggerUse)
 	NewSecondaryWeapons(1)=(CWeapon=class'AOCWeapon_HuntingKnife',CheckLimitExpGroup=EEXP_DAGGER,UnlockExpLevel=25.f,CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
 	NewSecondaryWeapons(2)=(CWeapon=class'AOCWeapon_ThrustDagger',CheckLimitExpGroup=EEXP_DAGGER,UnlockExpLevel=100.f,CorrespondingDuelProp=EDUEL_ThrustDaggerUse)
